@@ -1,3 +1,9 @@
+# !/usr/bin/env python3
+
+# Author: burcakotlu
+
+# Contact: burcakotlu@eng.ucsd.edu
+
 import os
 import shutil
 import re
@@ -34,6 +40,7 @@ DINUCS = 'DINUCS'
 INDELS = 'INDELS'
 
 OCCUPANCY_HEATMAP_COMMON_MULTIPLIER = 1/2
+NUMBER_OF_DECIMAL_PLACES_TO_ROUND = 3
 
 # This dictionary is used for cosmic figure namings
 cancer_type_2_NCI_Thesaurus_code_dict = {
@@ -187,7 +194,6 @@ def enriched(avg_fold_change, enriched_fold_change):
 
 def depleted(avg_fold_change, depleted_fold_change):
  return round(avg_fold_change,2) <= depleted_fold_change
-
 
 def get_number_of_mutations_filename(signature_type):
     if signature_type == SBS:

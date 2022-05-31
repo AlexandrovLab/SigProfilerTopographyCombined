@@ -1,3 +1,9 @@
+# !/usr/bin/env python3
+
+# Author: burcakotlu
+
+# Contact: burcakotlu@eng.ucsd.edu
+
 # Figure SBS4 Across All Tissues Case Study for the Topography of Mutational Processes im Human Cancer
 import os
 import numpy as np
@@ -64,6 +70,8 @@ from Combined_PCAWG_nonPCAWG_Strand_Bias_Figures import strand_bias_color_bins
 from Combined_PCAWG_nonPCAWG_Strand_Bias_Figures import TABLES
 from Combined_PCAWG_nonPCAWG_Strand_Bias_Figures import EXCEL_FILES
 from Combined_PCAWG_nonPCAWG_Strand_Bias_Figures import DATA_FILES
+
+from Combined_PCAWG_nonPCAWG_Strand_Bias_Figures import ODDS_RATIO
 
 from Combined_PCAWG_nonPCAWG_Heatmaps_For_DNA_Elements import DICTIONARIES
 from Combined_PCAWG_nonPCAWG_Heatmaps_For_DNA_Elements import readDictionary
@@ -884,11 +892,12 @@ def ad_hoc_plot_sbs_signatures_strand_bias_figures(strand_bias,
 
     # Put rectangles
     x = 0
+    x_mutation_type_text = 0.2  # For mutation types text
 
     # Write mutation types as text
     for i in range(0, len(mutation_types), 1):
         # mutation_type
-        top_axis.text(x, # text x
+        top_axis.text(x_mutation_type_text, # text x
                       len(rows_sbs_signatures) + 1.5, # text y
                       mutation_types[i],
                       fontsize=40,
@@ -911,6 +920,7 @@ def ad_hoc_plot_sbs_signatures_strand_bias_figures(strand_bias,
                                          alpha=0.25,
                                          edgecolor='grey'))
         x += 1
+        x_mutation_type_text +=1
 
     # CODE GOES HERE TO CENTER X-AXIS LABELS...
     # top_axis.set_xlim([0, len(mutation_types) * len(percentage_strings)])
@@ -1077,7 +1087,7 @@ def figure_case_study_strand_bias(combined_output_path,
 
     signature2cancer_type_list_dict = get_signature2cancer_type_list_dict(combined_output_path , cancer_types)
 
-    significance_level = 0.01
+    significance_level = 0.05
     min_required_number_of_mutations_on_strands = 1000
     min_required_percentage_of_mutations_on_strands = 5
     strand_bias_output_path = os.path.join(plot_output_path,'strand_bias')
@@ -1086,6 +1096,12 @@ def figure_case_study_strand_bias(combined_output_path,
     os.makedirs(os.path.join(strand_bias_output_path, TABLES), exist_ok=True)
     os.makedirs(os.path.join(strand_bias_output_path, EXCEL_FILES), exist_ok=True)
     os.makedirs(os.path.join(strand_bias_output_path, DATA_FILES), exist_ok=True)
+
+    inflate_mutations_to_remove_TC_NER_effect = False
+    consider_only_significant_results= False
+    consider_also_DBS_ID_signatures = True
+    fold_enrichment = ODDS_RATIO  # ODDS_RATIO = REAL_RATIO / SIMS_RATIO
+
 
     signature_transcribed_versus_untranscribed_df, \
     signature_transcribed_versus_untranscribed_filtered_q_value_df, \
@@ -1108,7 +1124,27 @@ def figure_case_study_strand_bias(combined_output_path,
                         min_required_percentage_of_mutations_on_strands,
                         strand_bias_output_path,
                         [],
-                        [])
+                        [],
+                        inflate_mutations_to_remove_TC_NER_effect,
+                        consider_only_significant_results,
+                        consider_also_DBS_ID_signatures,
+                        fold_enrichment)
+
+    # combined_output_dir,
+    # cancer_types,
+    # strand_biases,
+    # percentage_numbers,
+    # percentage_strings,
+    # significance_level,
+    # min_required_number_of_mutations_on_strands,
+    # min_required_percentage_of_mutations_on_strands,
+    # strand_bias_output_dir,
+    # dbs_signatures,
+    # id_signatures,
+    # inflate_mutations_to_remove_TC_NER_effect,
+    # consider_only_significant_results,
+    # consider_also_DBS_ID_signatures,
+    # fold_enrichment
 
     signature2mutation_type2strand2percent2cancertypeslist_dict, \
     type2strand2percent2cancertypeslist_dict = fill_strand_bias_dictionaries(signature_transcribed_versus_untranscribed_filtered_q_value_df,
@@ -1326,23 +1362,26 @@ def figure_case_study_strand_coordinated_mutagenesis(plot_output_path,
                                      rows_signatures_on_the_heatmap,
                                      minimum_required_number_of_processive_groups)
 
+# Sample
+# combined_output_path = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'SigProfilerTopographyRuns', 'Combined_PCAWG_nonPCAWG_4th_iteration')
+# plot_output_path = os.path.join('/oasis','tscc','scratch','burcak',
+#                                    'SigProfilerTopographyRuns',
+#                                    'combined_pcawg_and_nonpcawg_figures_pdfs',
+#                                    '4th_iteration',
+#                                    'Figure_SBS4_Case_Study')
 
-def main():
-    occupancy = True
+def main(input_dir, output_dir):
+
+    occupancy = False
     epigenomics_heatmap = False
     replication_time = False
-    strand_bias = False
+    strand_bias = True
     strand_coordinated_mutagenesis = False
 
     # Common parameters
     figure_types = [COSMIC]
-    combined_output_path = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'SigProfilerTopographyRuns', 'Combined_PCAWG_nonPCAWG_4th_iteration')
-    plot_output_path = os.path.join('/oasis','tscc','scratch','burcak',
-                                   'SigProfilerTopographyRuns',
-                                   'combined_pcawg_and_nonpcawg_figures_pdfs',
-                                   '4th_iteration',
-                                   'Figure_SBS4_Case_Study')
 
+    plot_output_path = os.path.join(output_dir, 'Figure_SBS4_Case_Study')
     os.makedirs(plot_output_path, exist_ok=True)
 
     sbs_signatures = ['SBS4']
@@ -1369,7 +1408,7 @@ def main():
         number_of_mutations_required_list = [AT_LEAST_1K_CONSRAINTS]
         number_of_mutations_required_list_for_ctcf = [AT_LEAST_1K_CONSRAINTS]
 
-        figure_case_study_occupancy(combined_output_path,
+        figure_case_study_occupancy(input_dir,
                                 plot_output_path,
                                 figure_file_extension,
                                 sbs_signatures,
@@ -1391,7 +1430,7 @@ def main():
 
     if replication_time:
         figure_case_study_replication_time(plot_output_path,
-                                   combined_output_path,
+                                   input_dir,
                                    cancer_types,
                                    sbs_signatures,
                                    id_signatures,
@@ -1417,7 +1456,7 @@ def main():
                                           'SBS4 Liver-HCC',
                                           'SBS4 ESCC']
 
-        figure_case_study_strand_bias(combined_output_path,
+        figure_case_study_strand_bias(input_dir,
                                   plot_output_path,
                                   cancer_types,
                                   rows_sbs_signatures = rows_sbs_signatures,
@@ -1453,7 +1492,7 @@ def main():
 
         signature_signature_type_tuples = [('SBS4', SBS)]
 
-        figure_case_study_epigenomics_heatmap(combined_output_path,
+        figure_case_study_epigenomics_heatmap(input_dir,
                                             heatmaps_main_output_path,
                                             hm_path,
                                             ctcf_path,
@@ -1493,7 +1532,7 @@ def main():
                                           'SBS4 ESCC']
 
         figure_case_study_strand_coordinated_mutagenesis(plot_output_path,
-                                                         combined_output_path,
+                                                         input_dir,
                                                          cancer_types,
                                                          figure_types,
                                                          cosmic_release_version,

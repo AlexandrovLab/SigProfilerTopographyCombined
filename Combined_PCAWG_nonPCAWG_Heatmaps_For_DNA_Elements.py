@@ -1,30 +1,8 @@
-# step1_data_ready = False takes 1 hour 15 minutes
-# step1_data_ready = True takes circa 30 minutes (26 minutes)
-# For combined normal and relaxed runs
-#
-# This file is to plot heatmap for DNA Elements (e.g.: HMs) using real average signal versus simulations average signal
-# Dark red color means that real average signal is higher than simulated average signal
-# Dark blue color means that simulated average signal is higher than real average signal
-#
-# Copy this file under   /home/burcak/developer/python/SigProfilerTopographyAuxiliary/combined_pcawg_and_nonpcawg_figures_pdfs/
-# Go to there
-# python
-# import Combined_PCAWG_nonPCAWG_Heatmaps_For_DNA_Elements as combined
-#
-# when data dictionaries are not ready call
-# combined.main(fold_change_method,colorbar)
-# combined.main('real_over_sim_100','seismic')
-#
-# If hms data dictionaries are ready and you need to plot heatmaps then call
-# dictionaries_are_ready_just_plot_heatmaps(fold_change_method,colorbar)
-# combined.dictionaries_are_ready_just_plot_heatmaps(fold_change_method,colorbar,sbs_signatures, id_signatures, dbs_signatures)
-#
-#
-# When you need to plot colorbar call
-# plot_pcawg_heatmap_discreet_colorbar(heatmaps_output_dir)
-#
-# Note that np.mean if there is  np.nan in the list/array it returns nan
-# np.nanmean discards any existing np.nans and take the average of non np.nans
+# !/usr/bin/env python3
+
+# Author: burcakotlu
+
+# Contact: burcakotlu@eng.ucsd.edu
 
 import os
 import numpy as np
@@ -68,7 +46,8 @@ from Combined_Common import LYMPH_CLL
 from Combined_Common import LYMPH_CLL_CLUSTERED
 from Combined_Common import LYMPH_CLL_NONCLUSTERED
 from Combined_Common import ALTERNATIVE_OUTPUT_DIR
-from  Combined_Common import get_alternative_combined_output_dir_and_cancer_type
+from Combined_Common import get_alternative_combined_output_dir_and_cancer_type
+from Combined_Common import NUMBER_OF_DECIMAL_PLACES_TO_ROUND
 
 import matplotlib as mpl
 from matplotlib import pyplot as plt
@@ -162,12 +141,10 @@ NO_EFFECT_BASED_ON_EXPECTED_BY_CHANCE = "No effect based on expected by chance"
 AT_LEAST_1K_CONSRAINTS = 1000
 AT_LEAST_20K_CONSRAINTS = 20000
 
-
 def calculate_radius(percentage_of_cancer_types):
     #To fit in a cell in the heatmap or grid
     radius = (percentage_of_cancer_types / ONE_HUNDRED_TWO) / 2
     return radius
-
 
 class NpEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -178,138 +155,6 @@ class NpEncoder(json.JSONEncoder):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return super(NpEncoder, self).default(obj)
-
-
-# May 31, 2020
-def heatmap_with_circles_showing_percentage_of_cancer_types(average_fold_change_array,
-                                                            row_signature_labels,
-                                                            column_dna_element_labels,
-                                                            step5_signature2dna_element2lists_dict,
-                                                            depleted_fold_change,
-                                                            enriched_fold_change,
-                                                            ax=None, cmap=None, norm=None, cbar_kw={}, cbarlabel="", **kwargs):
-
-
-    """
-    Create a heatmap from a numpy array and two lists of labels.
-
-    Parameters
-    ----------
-    data
-        A 2D numpy array of shape (N, M).
-    row_labels
-        A list or array of length N with the labels for the rows.
-    col_labels
-        A list or array of length M with the labels for the columns.
-    ax
-        A `matplotlib.axes.Axes` instance to which the heatmap is plotted.  If
-        not provided, use current axes or create a new one.  Optional.
-    cbar_kw
-        A dictionary with arguments to `matplotlib.Figure.colorbar`.  Optional.
-    cbarlabel
-        The label for the colorbar.  Optional.
-    **kwargs
-        All other arguments are forwarded to `imshow`.
-    """
-
-    #nans are handled here
-    # average_fold_change_array = np.ma.masked_invalid(average_fold_change_array)
-    # ax.patch.set(hatch='x', edgecolor='black')
-
-
-    #################################################################################################
-    ############################### Set the circle radius starts ####################################
-    #################################################################################################
-    circles=[]
-    for signature_index, signature in enumerate(row_signature_labels):
-        for dna_element_index, dna_element in enumerate(column_dna_element_labels):
-
-            if (signature in step5_signature2dna_element2lists_dict) and (dna_element in step5_signature2dna_element2lists_dict[signature]):
-
-                # [enriched_cancer_types, enriched_fold_change_list, enriched_avg_fold_change,enriched_filtered_q_value_list,
-                # depleted_cancer_types, depleted_fold_change_list, depleted_avg_fold_change,depleted_filtered_q_value_list,
-                # cancer_types, fold_change_list, avg_fold_change, number_of_mutations_list, weighted_avg_fold_change, filtered_q_values_list,
-                # denominator_cancer_types, denominator ]
-
-                # ['signature', 'dna_element',
-                #  'enriched_cancer_types', 'enriched_fold_change_list', 'enriched_avg_fold_change',  'enriched_num_of_mutations_list', 'enriched_weighted_avg_fold_change',  'enriched_filtered_q_value_list',
-                #  'depleted_cancer_types', 'depleted_fold_change_list', 'depleted_avg_fold_change',  'depleted_num_of_mutations_list', 'depleted_weighted_avg_fold_change',  'depleted_filtered_q_value_list',
-                #  'cancer_types_with_significant_q_value', 'fold_change_list', 'avg_fold_change',  'num_of_mutations_list', 'weighted_avg_fold_change', 'filtered_q_values_list',
-                #  'cancer_types_having_signature_dna_element', 'len(cancer_types_having_signature_dna_element)']
-
-                number_of_enriched_cancer_types = len(step5_signature2dna_element2lists_dict[signature][dna_element][0])
-                number_of_depleted_cancer_types = len(step5_signature2dna_element2lists_dict[signature][dna_element][6])
-                denominator=step5_signature2dna_element2lists_dict[signature][dna_element][19]
-
-                average_fold_change = average_fold_change_array[signature_index,dna_element_index]
-                if (average_fold_change<depleted_fold_change):
-                    percentage_of_cancer_types=(number_of_depleted_cancer_types/denominator)*100
-                    r = calculate_radius(percentage_of_cancer_types)
-                elif (average_fold_change>enriched_fold_change):
-                    percentage_of_cancer_types=(number_of_enriched_cancer_types/denominator)*100
-                    r = calculate_radius(percentage_of_cancer_types)
-                else:
-                    r=0
-                circles.append(plt.Circle((dna_element_index,signature_index),radius=r))
-            else:
-                r = 0
-                circles.append(plt.Circle((dna_element_index, signature_index), radius=r))
-    #################################################################################################
-    ############################### Set the circle radius ends ######################################
-    #################################################################################################
-
-    col = PatchCollection(circles, array=average_fold_change_array.flatten(), cmap=cmap, norm=norm)
-    ax.add_collection(col)
-    # Create colorbar and display (If you want to display the colorbar uncomment below)
-    # cbar = ax.figure.colorbar(im, ax=ax, **cbar_kw)
-    # cbar.ax.set_ylabel(cbarlabel, rotation=-90, va="bottom",fontsize=80,labelpad=25)
-    # cbar.ax.tick_params(labelsize=80)
-
-    # We want to show all ticks...
-    ax.set_xticks(np.arange(average_fold_change_array.shape[1]))
-    ax.set_yticks(np.arange(average_fold_change_array.shape[0]))
-
-    # Remove '-human' from column_dna_element_labels if any
-    column_dna_element_labels=[column_dna_element[:-6] if column_dna_element.endswith('-human') else column_dna_element for column_dna_element in column_dna_element_labels]
-
-    #ATAC-seq --> Chromatin
-    column_dna_element_labels=['Chromatin' if column_dna_element=='ATAC-seq' else column_dna_element for column_dna_element in column_dna_element_labels]
-
-    if len(row_signature_labels)>30:
-        fontsize=1.3*len(row_signature_labels)
-    else:
-        fontsize=4*len(row_signature_labels)
-
-    # ax.set_xticklabels(column_dna_element_labels, fontsize=50)
-    # ax.set_yticklabels(row_signature_labels, fontsize=50)
-    ax.set_xticklabels(column_dna_element_labels, fontsize=fontsize)
-    ax.set_yticklabels(row_signature_labels, fontsize=fontsize)
-
-    print('################################################################################')
-
-    # Let the horizontal axes labeling appear on top.
-    # Rotate the tick labels and set their alignment.
-
-    #X axis labels at top
-    ax.tick_params(top=True, bottom=False,labeltop=True, labelbottom=False,pad=5)
-    plt.setp(ax.get_xticklabels(), rotation=55, ha="left", rotation_mode="anchor")
-
-    #X axis labels at bottom
-    # ax.tick_params(top=False, bottom=True, labeltop=False, labelbottom=True, pad=5)
-    # plt.setp(ax.get_xticklabels(), rotation=55, ha="right", rotation_mode="anchor")
-
-    # Turn spines off and create white grid.
-    # for edge, spine in ax.spines.items():
-        # spine.set_visible(False)
-
-    # We want to show all ticks...
-    ax.set_xticks(np.arange(average_fold_change_array.shape[1]+1)-.5, minor=True)
-    ax.set_yticks(np.arange(average_fold_change_array.shape[0]+1)-.5, minor=True)
-
-    # ax.grid(which="minor", color="w", linestyle='-', linewidth=3)
-    ax.grid(which="minor", color="black", linestyle='-', linewidth=3)
-
-    ax.tick_params(which="minor", bottom=False, left=False)
 
 
 def heatmap(data, row_labels, col_labels, x_axis_labels_on_bottom = True, ax=None, fontsize=90, cbar_kw={}, cbarlabel="", **kwargs):
@@ -379,152 +224,6 @@ def heatmap(data, row_labels, col_labels, x_axis_labels_on_bottom = True, ax=Non
     # return im, cbar
     return im
 
-
-def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
-                     textcolors=["black", "white"],
-                     threshold=None, **textkw):
-    """
-    A function to annotate a heatmap.
-
-    Parameters
-    ----------
-    im
-        The AxesImage to be labeled.
-    data
-        Data used to annotate.  If None, the image's data is used.  Optional.
-    valfmt
-        The format of the annotations inside the heatmap.  This should either
-        use the string format method, e.g. "$ {x:.2f}", or be a
-        `matplotlib.ticker.Formatter`.  Optional.
-    textcolors
-        A list or array of two color specifications.  The first is used for
-        values below a threshold, the second for those above.  Optional.
-    threshold
-        Value in data units according to which the colors from textcolors are
-        applied.  If None (the default) uses the middle of the colormap as
-        separation.  Optional.
-    **kwargs
-        All other arguments are forwarded to each call to `text` used to create
-        the text labels.
-    """
-
-    if not isinstance(data, (list, np.ndarray)):
-        data = im.get_array()
-
-    # Normalize the threshold to the images color range.
-    if threshold is not None:
-        threshold = im.norm(threshold)
-    else:
-        threshold = im.norm(data.max())/2.
-
-    # Set default alignment to center, but allow it to be
-    # overwritten by textkw.
-    kw = dict(horizontalalignment="center",
-              verticalalignment="center")
-    kw.update(textkw)
-
-    # Get the formatter in case a string is supplied
-    if isinstance(valfmt, str):
-        valfmt = mpl.ticker.StrMethodFormatter(valfmt)
-
-    # Loop over the data and create a `Text` for each "pixel".
-    # Change the text's color depending on the data.
-    texts = []
-    for i in range(data.shape[0]):
-        for j in range(data.shape[1]):
-            # kw.update(color=textcolors[int(im.norm(data[i, j]) > threshold)])
-            kw.update(color='white')
-            text = im.axes.text(j, i, valfmt(data[i, j], None), **kw)
-            texts.append(text)
-
-    return texts
-
-# Nov 29, 2019
-# Biosamples are aggregated
-# Step4
-# Rows dna_elements
-# Columns cancer_types
-def fill_average_fold_change_array_biosamples_aggregated(signature,cancer_type2dna_element2filtered_q_value_list_dict):
-    dna_elements=[]
-    cancer_types=[]
-
-    for cancer_type in cancer_type2dna_element2filtered_q_value_list_dict:
-        cancer_types.append(cancer_type)
-        for dna_element in cancer_type2dna_element2filtered_q_value_list_dict[cancer_type]:
-            if dna_element not in dna_elements:
-                dna_elements.append(dna_element)
-
-    print('%s rows:%s columns:%s' %(signature,dna_elements,cancer_types))
-
-    #sort the hms
-    dna_elements=sorted(dna_elements,key=natural_key)
-
-    #sort the cancer_types
-    cancer_types=sorted(cancer_types,key=natural_key)
-
-    #Initialize
-    average_fold_change_array = np.zeros((len(dna_elements), len(cancer_types)))
-
-    for dna_element_index, dna_element in enumerate(dna_elements, 0):
-        for cancer_type_index,cancer_type in enumerate(cancer_types,0):
-            if cancer_type in cancer_type2dna_element2filtered_q_value_list_dict:
-                if dna_element in cancer_type2dna_element2filtered_q_value_list_dict[cancer_type]:
-                    filtered_q_value_list = cancer_type2dna_element2filtered_q_value_list_dict[cancer_type][dna_element]
-                    # ['dna_element_list', 'fold_change_list', 'avg_fold_change', 'p_value_list', 'combined_p_value', 'filtered_q_value']
-                    average_fold_change=filtered_q_value_list[2]
-                    average_fold_change_array[dna_element_index,cancer_type_index]=average_fold_change
-                else:
-                    average_fold_change_array[dna_element_index,cancer_type_index] = np.nan
-            else:
-                average_fold_change_array[dna_element_index,cancer_type_index] = np.nan
-
-    return dna_elements, cancer_types, average_fold_change_array
-
-# Once ENCODE files are downloaded and renamed there is no need for this.
-# Files are already renamed w.r.t. this convention
-# No more used
-def get_atac_filtered_files_metadata_df(filtered_files_metadata_file_path):
-    atac_filtered_files_metadata_df = pd.read_csv(filtered_files_metadata_file_path, sep='\t')
-
-    #Add column
-    atac_filtered_files_metadata_df['encode_element']=atac_filtered_files_metadata_df['File accession'].str.replace(' ','-') + "_" + \
-                                                      atac_filtered_files_metadata_df['Biosample term name'].str.replace('\'','-').str.replace(', ','-').str.replace('/','').str.replace(' ','-') + "_" + \
-                                                      atac_filtered_files_metadata_df['Disease'].str.replace(', ','-').str.replace('/','').str.replace(' ','-') + "_" + \
-                                                      'ATAC-seq'
-
-    atac_filtered_files_metadata_df['Biosample term name']=atac_filtered_files_metadata_df['Biosample term name'].str.replace('\'','-').str.replace(', ','-').str.replace('/','').str.replace(' ','-')
-
-    print('atac_filtered_files_metadata_df.columns.values')
-    print(atac_filtered_files_metadata_df.columns.values)
-
-    return atac_filtered_files_metadata_df
-
-# Once ENCODE files are downloaded and renamed there is no need for this.
-# Files are already renamed w.r.t. this convention
-# No more used
-def get_filtered_files_metadata_df(filtered_files_metadata_file_path):
-    filtered_files_metadata_df = pd.read_csv(filtered_files_metadata_file_path, sep='\t')
-
-    #add column
-    filtered_files_metadata_df['encode_element']=filtered_files_metadata_df['File accession'].str.replace(' ','-') + "_" + \
-                                                 filtered_files_metadata_df['Biosample term name'].str.replace('\'','-').str.replace(', ','-').str.replace('/','').str.replace(' ','-') + "_" + \
-                                                 filtered_files_metadata_df['Disease'].str.replace(', ','-').str.replace('/','').str.replace(' ','-') + "_" + \
-                                                 filtered_files_metadata_df['Experiment target'].str.replace(', ','-').str.replace('/','').str.replace(' ','-')
-
-    filtered_files_metadata_df['Biosample term name']=filtered_files_metadata_df['Biosample term name'].str.replace('\'','-').str.replace(', ','-').str.replace('/','').str.replace(' ','-')
-
-    print('filtered_files_metadata_df.columns.values')
-    print(filtered_files_metadata_df.columns.values)
-
-    return filtered_files_metadata_df
-
-# Old way of getting encode elements associated with a biosample
-# No more used
-# For ATAC-seq, CTCF and HM
-# Add encode_hm column by looking at RenameFilenames_HM.py (To be consistent)
-def get_encode_elements(biosample,encode_filtered_metadata_df):
-    encode_elements = list(encode_filtered_metadata_df[encode_filtered_metadata_df['Biosample term name']==biosample]['encode_element'])
-    return encode_elements
 
 # New way of getting encode elements associated with a biosample
 def get_encode_elements_using_listdir(biosample, dir_path):
@@ -642,7 +341,7 @@ def get_dna_element(dna_element):
 # combined p value list
 # [encode_element_list, fold_change_list,avg_fold_change,p_value_list,combined_p_value]
 def step3_apply_multiple_tests_correction(step2_signature2cancer_type2dna_element2combined_p_value_list_dict,heatmaps_main_output_path):
-    step3_signature2cancer_type2dna_element2q_value_list_dict={}
+    step3_signature2cancer_type2dna_element2q_value_list_dict = {}
 
     all_p_values = []
     all_p_values_element_names = []
@@ -674,7 +373,7 @@ def step3_apply_multiple_tests_correction(step2_signature2cancer_type2dna_elemen
 
     for element_index, element_name in enumerate(all_p_values_element_names,0):
         signature, cancer_type, dna_element = element_name
-        q_value=all_FDR_BH_adjusted_p_values[element_index]
+        q_value = all_FDR_BH_adjusted_p_values[element_index]
 
         # combined_p_value_list
         # [fold_change_list,avg_fold_change,p_value_list,combined_p_value]
@@ -684,24 +383,28 @@ def step3_apply_multiple_tests_correction(step2_signature2cancer_type2dna_elemen
         p_value_list = step2_signature2cancer_type2dna_element2combined_p_value_list_dict[signature][cancer_type][dna_element][3]
         combined_p_value = step2_signature2cancer_type2dna_element2combined_p_value_list_dict[signature][cancer_type][dna_element][4]
 
+        # round
+        fold_change_list = np.around(fold_change_list, NUMBER_OF_DECIMAL_PLACES_TO_ROUND).tolist()
+        avg_fold_change = np.around(avg_fold_change, NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+
         if signature in step3_signature2cancer_type2dna_element2q_value_list_dict:
             if cancer_type in step3_signature2cancer_type2dna_element2q_value_list_dict[signature]:
                 if dna_element in step3_signature2cancer_type2dna_element2q_value_list_dict[signature][cancer_type]:
                     print('There is a situation')
                 else:
-                    step3_signature2cancer_type2dna_element2q_value_list_dict[signature][cancer_type][dna_element]=[encode_element_list,fold_change_list,avg_fold_change,p_value_list,combined_p_value,q_value]
+                    step3_signature2cancer_type2dna_element2q_value_list_dict[signature][cancer_type][dna_element]=[encode_element_list, fold_change_list, avg_fold_change, p_value_list, combined_p_value, q_value]
             else:
                 step3_signature2cancer_type2dna_element2q_value_list_dict[signature][cancer_type] = {}
-                step3_signature2cancer_type2dna_element2q_value_list_dict[signature][cancer_type][dna_element]=[encode_element_list,fold_change_list,avg_fold_change,p_value_list,combined_p_value,q_value]
+                step3_signature2cancer_type2dna_element2q_value_list_dict[signature][cancer_type][dna_element]=[encode_element_list, fold_change_list, avg_fold_change, p_value_list, combined_p_value, q_value]
         else:
             step3_signature2cancer_type2dna_element2q_value_list_dict[signature] = {}
             step3_signature2cancer_type2dna_element2q_value_list_dict[signature][cancer_type] = {}
-            step3_signature2cancer_type2dna_element2q_value_list_dict[signature][cancer_type][dna_element] = [encode_element_list,fold_change_list,avg_fold_change,p_value_list,combined_p_value,q_value]
+            step3_signature2cancer_type2dna_element2q_value_list_dict[signature][cancer_type][dna_element] = [encode_element_list, fold_change_list, avg_fold_change, p_value_list, combined_p_value, q_value]
 
     # Write dictionary as a dataframe
     df_filename = 'Step3_Signature_CancerType_DNAElement_QValue.txt'
     filepath = os.path.join(heatmaps_main_output_path, TABLES, df_filename)
-    step3_q_value_df=write_dictionary_as_dataframe_step3_q_value(step3_signature2cancer_type2dna_element2q_value_list_dict,filepath)
+    step3_q_value_df = write_dictionary_as_dataframe_step3_q_value(step3_signature2cancer_type2dna_element2q_value_list_dict,filepath)
 
     return step3_q_value_df, step3_signature2cancer_type2dna_element2q_value_list_dict
 
@@ -775,15 +478,6 @@ def fill_cancer_type_signature_cutoff_average_probability_df(cancer_types, combi
     return cancer_type_signature_cutoff_number_of_mutations_average_probability_df
 
 
-def write_denominators_as_dataframe(signature2dna_element2cancer_type_list_dict,filepath):
-    L = sorted([(signature, dna_element, b)
-                for signature, a in signature2dna_element2cancer_type_list_dict.items()
-                for dna_element, b in a.items()])
-    df = pd.DataFrame(L, columns=['signature', 'dna_element', 'denominator_cancer_types'])
-    df.to_csv(filepath, sep='\t', header=True, index=False)
-
-    return df
-
 # Complete list with p value
 #[signature, cancer_type, cutoff, number_of_mutations, biosample, dna_element,
 # avg_real_signal, avg_sim_signal, fold_change, min_sim_signal, max_sim_signal,
@@ -804,7 +498,6 @@ def write_dictionary_as_dataframe_step1_p_value(step1_signature2CancerType2Biosa
 
     return df
 
-# May 26, 2020
 # Combined p value
 # [fold_change_list,avg_fold_change,p_value_list,combined_p_value]
 def write_dictionary_as_dataframe_step2_combined_p_value(signature2cancer_type2dna_element2combined_p_value_list_dict,filepath):
@@ -830,51 +523,54 @@ def write_dictionary_as_dataframe_step3_q_value(step3_signature2cancer_type2dna_
     df.to_csv(filepath, sep='\t', header=True, index=False)
 
     return df
-########################################################
 
 
-########################################################
-#[fold_change_list, avg_fold_change, p_value_list, combined_p_value,q_value]
-def write_dictionary_as_dataframe_step4_filtered_q_value(step4_signature2cancer_type2dna_element2filtered_q_list_dict,filepath):
-    L = sorted([(signature, cancer_type, dna_element, filtered_q_value_list[0], filtered_q_value_list[1], filtered_q_value_list[2], filtered_q_value_list[3], filtered_q_value_list[4], filtered_q_value_list[5])
-                for signature, a in step4_signature2cancer_type2dna_element2filtered_q_list_dict.items()
-                 for cancer_type, b in a.items()
-                  for dna_element, filtered_q_value_list in b.items()])
-    df = pd.DataFrame(L, columns=['signature', 'cancer_type', 'dna_element',
-                                  'encode_element_list', 'fold_change_list', 'avg_fold_change', 'p_value_list', 'combined_p_value','filtered_q_value'])
-    df.to_csv(filepath, sep='\t', header=True, index=False)
+def there_is_a_result_to_show(signatureType,
+                              all_dna_elements,
+                            all_signatures,
+                            cancer_types,
+                            step3_q_value_df,
+                            cancer_type_signature_cutoff_number_of_mutations_average_probability_df,
+                            enriched_fold_change,
+                            depleted_fold_change,
+                            significance_level):
 
-    return df
+    # In COSMIC case all_signatures will contain only one signature
+    signatures, \
+    signature_signature_type_tuples, \
+    signature_tissue_type_tuples, \
+    signatures_ylabels_on_the_heatmap = fill_lists(all_signatures[0],
+                                                   signatureType,
+                                                   cancer_type_signature_cutoff_number_of_mutations_average_probability_df)
 
+    # Update all_signatures
+    # We want to have as many rows in heatmap as signatures
+    all_signatures = signatures
 
-# May 26, 2020
-# Cancer types pooled. Combined q-values
-# [enriched_cancer_types,enriched_fold_change_list,enriched_avg_fold_change,enriched_filtered_q_value_list,
-# depleted_cancer_types,depleted_fold_change_list,depleted_avg_fold_change,depleted_filtered_q_value_list,
-# cancer_types,fold_change_list,avg_fold_change,filtered_q_values_list]
-def write_dictionary_as_dataframe_step5_enriched_depleted_cancer_types(signature2dna_element2lists_dict,filepath):
-    L = sorted([(signature, dna_element,
-                 #cancer_types_list[0], cancer_types_list[1], cancer_types_list[2], cancer_types_list[3],cancer_types_list[4], cancer_types_list[5],
-                 #cancer_types_list[6], cancer_types_list[7], cancer_types_list[8], cancer_types_list[9], cancer_types_list[10], cancer_types_list[11],
-                 cancer_types_list[12], cancer_types_list[13], cancer_types_list[14], cancer_types_list[15], cancer_types_list[16], cancer_types_list[17],
-                 cancer_types_list[18], cancer_types_list[19])
-                for signature, a in signature2dna_element2lists_dict.items()
-                 for dna_element, cancer_types_list in a.items()])
-    df = pd.DataFrame(L, columns=['signature', 'dna_element',
-                                  #'enriched_cancer_types','enriched_fold_change_list','enriched_avg_fold_change','enriched_num_of_mutations_list','enriched_weighted_avg_fold_change','enriched_filtered_q_value_list',
-                                  #'depleted_cancer_types', 'depleted_fold_change_list', 'depleted_avg_fold_change','depleted_num_of_mutations_list','depleted_weighted_avg_fold_change', 'depleted_filtered_q_value_list',
-                                  'cancer_types_with_significant_q_value','fold_change_list','avg_fold_change','num_of_mutations_list','weighted_avg_fold_change', 'filtered_q_values_list',
-                                  'cancer_types_having_signature_dna_element','len(cancer_types_having_signature_dna_element)'])
-    df.to_csv(filepath, sep='\t', header=True, index=False)
-
-    return df
-
-def anything_to_show_for_this_signature(signature, step3_q_value_df):
-    print(step3_q_value_df[step3_q_value_df['signature']==signature].shape)
-    return True
+    # Same for COSMIC and MANUSCRIPT
+    signature2dna_element2cancer_type_list_dict, \
+    considered_dna_elements, \
+    considered_signatures = fill_signature2dna_element2cancer_type_list_dict(all_dna_elements,
+                                                                             all_signatures,
+                                                                             cancer_types,
+                                                                             step3_q_value_df,
+                                                                             enriched_fold_change,
+                                                                             depleted_fold_change,
+                                                                             significance_level)
 
 
-# May 30, 2020
+    for signature in signature2dna_element2cancer_type_list_dict:
+        for dna_element in signature2dna_element2cancer_type_list_dict[signature]:
+            if len(signature2dna_element2cancer_type_list_dict[signature][dna_element][ENRICHED_CANCER_TYPES]) > 0:
+                return True
+            elif len(signature2dna_element2cancer_type_list_dict[signature][dna_element][DEPLETED_CANCER_TYPES]) > 0:
+                return True
+            elif len(signature2dna_element2cancer_type_list_dict[signature][dna_element][OTHER_CANCER_TYPES]) > 0:
+                return True
+
+    return False
+
+
 def compute_fold_change_significance_plot_heatmap(combine_p_values_method,
                                                   window_size,
                                                   tissue_type,
@@ -976,7 +672,6 @@ def compute_fold_change_significance_plot_heatmap(combine_p_values_method,
     step3_q_value_df, \
     step3_signature2cancer_type2dna_element2q_value_list_dict = step3_apply_multiple_tests_correction(step2_signature2cancer_type2dna_element2combined_p_value_list_dict,
                                                                                                       heatmaps_main_output_path)
-
     # FEB 11 2021
     # plot heatmap rows signatures columns cancer_types for each DNA element
     # It can use either step3_signature2cancer_type2dna_element2q_value_list_dict or step4_signature2cancer_type2dna_element2filtered_q_value_list_dict
@@ -1009,6 +704,7 @@ def compute_fold_change_significance_plot_heatmap(combine_p_values_method,
     print('For information -- after remove all_dna_elements:', all_dna_elements)
 
     # Uncomment in real run starts
+
     # Plot heatmap for each DNA element
     name_for_group_by = 'dna_element'
     name_for_rows = 'signature'
@@ -1037,11 +733,18 @@ def compute_fold_change_significance_plot_heatmap(combine_p_values_method,
                  remove_columns_rows_with_no_significant_result)
 
     # Plot heatmap for each signature
-    name_for_group_by='signature'
-    name_for_rows='dna_element'
-    name_for_columns='cancer_type'
+    name_for_group_by = 'signature'
+    name_for_rows = 'dna_element'
+    name_for_columns = 'cancer_type'
     all_rows = all_dna_elements
-    all_columns=cancer_types
+    all_columns = cancer_types
+
+    # # For Graphical Abstract Figure
+    # name_for_group_by = 'signature'
+    # name_for_rows = 'cancer_type'
+    # name_for_columns = 'dna_element'
+    # all_rows = cancer_types
+    # all_columns = all_dna_elements
 
     os.makedirs(os.path.join(heatmaps_main_output_path,'heatmaps_for_each_signature'), exist_ok=True)
     heatmap_output_path = os.path.join(heatmaps_main_output_path,'heatmaps_for_each_signature')
@@ -1144,78 +847,138 @@ def compute_fold_change_significance_plot_heatmap(combine_p_values_method,
         elif figure_type == COSMIC:
             if sbs_signatures:
                 for signature in sbs_signatures:
-                    if anything_to_show_for_this_signature(signature, step3_q_value_df):
-                        # Write COSMIC data files
-                        data_file_name = '%s_%s_%s.txt' % (cosmic_release_version, signature, COSMIC_HISTONE_MODIFICATIONS)
-                        data_file_path = os.path.join(heatmaps_main_output_path, DATA_FILES, data_file_name)
-                        signature_based_df = step3_q_value_df[step3_q_value_df['signature'] == signature]
-                        signature_based_df.to_csv(data_file_path, sep='\t', index=False, mode='w')
-                        plot_heatmaps_rows_signatures_columns_dna_elements_with_pie_charts(step3_q_value_df,
-                            cancer_type_signature_cutoff_number_of_mutations_average_probability_df,
-                            SBS,
-                            [signature],
+                    if there_is_a_result_to_show(SBS,
                             all_dna_elements,
+                            [signature],
                             cancer_types,
-                            depleted_fold_change,
+                            step3_q_value_df,
+                            cancer_type_signature_cutoff_number_of_mutations_average_probability_df,
                             enriched_fold_change,
-                            significance_level,
-                            heatmaps_main_output_path,
-                            figure_type,
-                            cosmic_release_version,
-                            figure_file_extension,
-                            heatmap_rows_signatures_columns_dna_elements = False)
+                            depleted_fold_change,
+                            significance_level):
+
+                        signature_based_df = step3_q_value_df[(step3_q_value_df['signature'] == signature) &
+                                                              (step3_q_value_df['dna_element'] != 'ATAC-seq') &
+                                                              (step3_q_value_df['dna_element'] != 'CTCF-human') &
+                                                              (step3_q_value_df['dna_element'] != 'Nucleosome')]
+
+                        if len(signature_based_df) > 0:
+                            # Write COSMIC data files
+                            data_file_name = '%s_%s_%s.txt' % (cosmic_release_version, signature, COSMIC_HISTONE_MODIFICATIONS)
+                            data_file_path = os.path.join(heatmaps_main_output_path, DATA_FILES, data_file_name)
+
+                            with open(data_file_path, 'w') as f:
+                                # header line
+                                f.write("# Only cancer types with minimum 2000 mutations for SBS signatures and minimum 1000 mutations for DBS and ID signatures with average probability at least 0.75 are considered.\n")
+                                signature_based_df.to_csv(f, sep='\t', index=False, mode='w')
+
+                            plot_heatmaps_rows_signatures_columns_dna_elements_with_pie_charts(step3_q_value_df,
+                                cancer_type_signature_cutoff_number_of_mutations_average_probability_df,
+                                SBS,
+                                [signature],
+                                all_dna_elements,
+                                cancer_types,
+                                depleted_fold_change,
+                                enriched_fold_change,
+                                significance_level,
+                                heatmaps_main_output_path,
+                                figure_type,
+                                cosmic_release_version,
+                                figure_file_extension,
+                                heatmap_rows_signatures_columns_dna_elements = False)
 
             if dbs_signatures:
                 for signature in dbs_signatures:
-                    if anything_to_show_for_this_signature(signature, step3_q_value_df):
-                        # Write COSMIC data files
-                        data_file_name = '%s_%s_%s.txt' % (cosmic_release_version, signature, COSMIC_HISTONE_MODIFICATIONS)
-                        data_file_path = os.path.join(heatmaps_main_output_path, DATA_FILES, data_file_name)
-                        signature_based_df = step3_q_value_df[step3_q_value_df['signature'] == signature]
-                        signature_based_df.to_csv(data_file_path, sep='\t', index=False, mode='w')
-                        plot_heatmaps_rows_signatures_columns_dna_elements_with_pie_charts(step3_q_value_df,
-                            cancer_type_signature_cutoff_number_of_mutations_average_probability_df,
-                            DBS,
-                            [signature],
+                    if there_is_a_result_to_show(DBS,
                             all_dna_elements,
+                            [signature],
                             cancer_types,
-                            depleted_fold_change,
+                            step3_q_value_df,
+                            cancer_type_signature_cutoff_number_of_mutations_average_probability_df,
                             enriched_fold_change,
-                            significance_level,
-                            heatmaps_main_output_path,
-                            figure_type,
-                            cosmic_release_version,
-                            figure_file_extension,
-                            heatmap_rows_signatures_columns_dna_elements = False)
+                            depleted_fold_change,
+                            significance_level):
+
+                        signature_based_df = step3_q_value_df[(step3_q_value_df['signature'] == signature) &
+                                                              (step3_q_value_df['dna_element'] != 'ATAC-seq') &
+                                                              (step3_q_value_df['dna_element'] != 'CTCF-human') &
+                                                              (step3_q_value_df['dna_element'] != 'Nucleosome')]
+
+                        if len(signature_based_df) > 0:
+                            # Write COSMIC data files
+                            data_file_name = '%s_%s_%s.txt' % (cosmic_release_version, signature, COSMIC_HISTONE_MODIFICATIONS)
+                            data_file_path = os.path.join(heatmaps_main_output_path, DATA_FILES, data_file_name)
+
+                            with open(data_file_path, 'w') as f:
+                                # header line
+                                f.write("# Only cancer types with minimum 2000 mutations for SBS signatures and minimum 1000 mutations for DBS and ID signatures with average probability at least 0.75 are considered.\n")
+                                signature_based_df.to_csv(f, sep='\t', index=False, mode='w')
+
+                            plot_heatmaps_rows_signatures_columns_dna_elements_with_pie_charts(step3_q_value_df,
+                                cancer_type_signature_cutoff_number_of_mutations_average_probability_df,
+                                DBS,
+                                [signature],
+                                all_dna_elements,
+                                cancer_types,
+                                depleted_fold_change,
+                                enriched_fold_change,
+                                significance_level,
+                                heatmaps_main_output_path,
+                                figure_type,
+                                cosmic_release_version,
+                                figure_file_extension,
+                                heatmap_rows_signatures_columns_dna_elements = False)
 
             if id_signatures:
                 for signature in id_signatures:
-                    if anything_to_show_for_this_signature(signature, step3_q_value_df):
-                        # Write COSMIC data files
-                        data_file_name = '%s_%s_%s.txt' % (cosmic_release_version, signature, COSMIC_HISTONE_MODIFICATIONS)
-                        data_file_path = os.path.join(heatmaps_main_output_path, DATA_FILES, data_file_name)
-                        signature_based_df = step3_q_value_df[step3_q_value_df['signature'] == signature]
-                        signature_based_df.to_csv(data_file_path, sep='\t', index=False, mode='w')
-                        plot_heatmaps_rows_signatures_columns_dna_elements_with_pie_charts(step3_q_value_df,
-                            cancer_type_signature_cutoff_number_of_mutations_average_probability_df,
-                            ID,
-                            [signature],
+                    if there_is_a_result_to_show(ID,
                             all_dna_elements,
+                            [signature],
                             cancer_types,
-                            depleted_fold_change,
+                            step3_q_value_df,
+                            cancer_type_signature_cutoff_number_of_mutations_average_probability_df,
                             enriched_fold_change,
-                            significance_level,
-                            heatmaps_main_output_path,
-                            figure_type,
-                            cosmic_release_version,
-                            figure_file_extension,
-                            heatmap_rows_signatures_columns_dna_elements = False)
+                            depleted_fold_change,
+                            significance_level):
+
+                        signature_based_df = step3_q_value_df[(step3_q_value_df['signature'] == signature) &
+                                                              (step3_q_value_df['dna_element'] != 'ATAC-seq') &
+                                                              (step3_q_value_df['dna_element'] != 'CTCF-human') &
+                                                              (step3_q_value_df['dna_element'] != 'Nucleosome')]
+
+                        if len(signature_based_df) > 0:
+                            # Write COSMIC data files
+                            data_file_name = '%s_%s_%s.txt' % (cosmic_release_version, signature, COSMIC_HISTONE_MODIFICATIONS)
+                            data_file_path = os.path.join(heatmaps_main_output_path, DATA_FILES, data_file_name)
+
+                            with open(data_file_path, 'w') as f:
+                                # header line
+                                f.write("# Only cancer types with minimum 2000 mutations for SBS signatures and minimum 1000 mutations for DBS and ID signatures with average probability at least 0.75 are considered.\n")
+                                signature_based_df.to_csv(f, sep='\t', index=False, mode='w')
+
+                            plot_heatmaps_rows_signatures_columns_dna_elements_with_pie_charts(step3_q_value_df,
+                                cancer_type_signature_cutoff_number_of_mutations_average_probability_df,
+                                ID,
+                                [signature],
+                                all_dna_elements,
+                                cancer_types,
+                                depleted_fold_change,
+                                enriched_fold_change,
+                                significance_level,
+                                heatmaps_main_output_path,
+                                figure_type,
+                                cosmic_release_version,
+                                figure_file_extension,
+                                heatmap_rows_signatures_columns_dna_elements = False)
+
+
+    step1_p_value_df = process_dataframes(step1_p_value_df)
 
     # write excel files
     excel_file_name = '%s_%s.xlsx' %(cosmic_release_version, COSMIC_HISTONE_MODIFICATIONS)
     excel_file_path = os.path.join(heatmaps_main_output_path, EXCEL_FILES, excel_file_name)
-    df_list = [step1_p_value_df, step2_combined_p_value_df, step3_q_value_df]
-    sheet_list = ['step1_p_value', 'step2_combined_p_value', 'step3_q_value']
+    df_list = [step1_p_value_df, step3_q_value_df]
+    sheet_list = ['p_value', 'q_value']
     write_excel_file(df_list, sheet_list, excel_file_path)
 
 
@@ -1226,10 +989,21 @@ def write_excel_file(df_list, sheet_list, file_name):
         dataframe.to_excel(writer, sheet_name=sheet, startrow=0 , startcol=0, index=False)
     writer.save()
 
+# Sample input_dir and output_dir
+# input_dir = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'SigProfilerTopographyRuns', 'Combined_PCAWG_nonPCAWG_4th_iteration')
+# output_dir = os.path.join('/oasis', 'tscc', 'scratch', 'burcak', 'SigProfilerTopographyRuns', 'combined_pcawg_and_nonpcawg_figures_pdfs', '4th_iteration')
+
+# input_dir = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'SigProfilerTopographyRuns', 'Combined_PCAWG_nonPCAWG_prob_mode')
+# output_dir = os.path.join('/oasis', 'tscc', 'scratch', 'burcak', 'SigProfilerTopographyRuns', 'combined_pcawg_and_nonpcawg_figures_pdfs', 'prob_mode')
+
+# input_dir = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'SigProfilerTopographyRuns', 'Combined_PCAWG_nonPCAWG_prob_mode_05')
+# output_dir = os.path.join('/oasis', 'tscc', 'scratch', 'burcak', 'SigProfilerTopographyRuns', 'combined_pcawg_and_nonpcawg_figures_pdfs', 'prob_mode_05')
+
 # Main Function
 # Artifact signatures are removed for manuscript
 # No need to set as a parameter in main function
-def main(cluster_type = TSCC,
+def main(input_dir,
+         output_dir,
          tissue_type = 'Normal',
          step1_data_ready = False,
          window_size = 100,
@@ -1261,21 +1035,14 @@ def main(cluster_type = TSCC,
 
     # Real and simulations signals are here
     heatmaps_dir_name = "heatmaps_dna_elements_window_size_%s_%s" %(window_size, tissue_type)
+    output_dir = os.path.join(output_dir, heatmaps_dir_name)
 
-    if (cluster_type == TSCC):
-        combined_output_dir = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'SigProfilerTopographyRuns', 'Combined_PCAWG_nonPCAWG_4th_iteration')
-
-        epigenomics_output_path = os.path.join('/oasis', 'tscc', 'scratch', 'burcak', 'SigProfilerTopographyRuns',
-                                              'combined_pcawg_and_nonpcawg_figures_pdfs', '4th_iteration',
-                                              heatmaps_dir_name)
-        if not step1_data_ready:
-            deleteOldData(epigenomics_output_path)
-
-        # tscc oasis
-        os.makedirs(os.path.join(epigenomics_output_path, TABLES), exist_ok=True)
-        os.makedirs(os.path.join(epigenomics_output_path, DATA_FILES), exist_ok=True)
-        os.makedirs(os.path.join(epigenomics_output_path, EXCEL_FILES), exist_ok=True)
-        os.makedirs(os.path.join(epigenomics_output_path, DICTIONARIES), exist_ok=True)
+    if not step1_data_ready:
+        deleteOldData(output_dir)
+        os.makedirs(os.path.join(output_dir, TABLES), exist_ok=True)
+        os.makedirs(os.path.join(output_dir, DATA_FILES), exist_ok=True)
+        os.makedirs(os.path.join(output_dir, EXCEL_FILES), exist_ok=True)
+        os.makedirs(os.path.join(output_dir, DICTIONARIES), exist_ok=True)
 
     # NUMBER OF SIMULATIONS
     numberofSimulations = 100
@@ -1311,6 +1078,10 @@ def main(cluster_type = TSCC,
                      'ID14', 'ID15', 'ID16', 'ID17']
     id_signatures.append(ALL_INDELS)
 
+    hm_path = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'data', 'ENCODE', 'GRCh37', 'HM')
+    ctcf_path = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'data', 'ENCODE', 'GRCh37', 'CTCF')
+    atac_path = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'data', 'ENCODE', 'GRCh37', 'ATAC_seq')
+
     # # For testing purposes
     # # cancer_types = ['Liver-HCC']
     # sbs_signatures = ['SBS4']
@@ -1330,50 +1101,45 @@ def main(cluster_type = TSCC,
     # Updated for Lymphoid samples
     cancer_type_signature_cutoff_number_of_mutations_average_probability_df = fill_cancer_type_signature_cutoff_average_probability_df(
         cancer_types,
-        combined_output_dir)
+        input_dir)
 
     if (cancer_type_signature_cutoff_number_of_mutations_average_probability_df is not None):
         df_file_name= 'cancer_type_signature_cutoff_average_probability_df.txt'
-        df_file_path = os.path.join(epigenomics_output_path, TABLES, df_file_name)
+        df_file_path = os.path.join(output_dir, TABLES, df_file_name)
         cancer_type_signature_cutoff_number_of_mutations_average_probability_df.to_csv(df_file_path, sep='\t', header=True, index=False)
 
-    cancer_type_mutation_type_number_of_mutations_df = fill_cancer_type_mutation_type_number_of_mutations_df(cancer_types, combined_output_dir)
+    cancer_type_mutation_type_number_of_mutations_df = fill_cancer_type_mutation_type_number_of_mutations_df(cancer_types, input_dir)
 
     if (cancer_type_mutation_type_number_of_mutations_df is not None):
         df_file_name = 'cancer_type_mutation_type_number_of_mutations_df.txt'
-        df_file_path = os.path.join(epigenomics_output_path, TABLES, df_file_name)
+        df_file_path = os.path.join(output_dir, TABLES, df_file_name)
         cancer_type_mutation_type_number_of_mutations_df.to_csv(df_file_path, sep='\t', header=True, index=False)
 
-    if cluster_type == TSCC:
-        hm_path = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'data', 'ENCODE', 'GRCh37', 'HM')
-        ctcf_path = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'data', 'ENCODE', 'GRCh37', 'CTCF')
-        atac_path = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'data', 'ENCODE', 'GRCh37', 'ATAC_seq')
-
     # Write excel files
-    excel_file_path = os.path.join(epigenomics_output_path,EXCEL_FILES,'Cancer_Types.xlsx')
+    excel_file_path = os.path.join(output_dir, EXCEL_FILES,'Cancer_Types.xlsx')
     df_list = [cancer_type_signature_cutoff_number_of_mutations_average_probability_df, cancer_type_mutation_type_number_of_mutations_df]
     sheet_list = ['average_probability', 'samples']
     write_excel_file(df_list, sheet_list, excel_file_path)
 
     if (colorbar == COLORBAR_SEISMIC):
-        plot_pcawg_heatmap_seismic_colorbar(epigenomics_output_path)
+        plot_pcawg_heatmap_seismic_colorbar(output_dir)
     elif (colorbar == COLORBAR_DISCREET):
-        plot_pcawg_heatmap_discreet_colorbar(epigenomics_output_path)
+        plot_pcawg_heatmap_discreet_colorbar(output_dir)
 
     # Plot legends as separate figures
-    plot_proportion_of_cancer_types_with_the_signature(epigenomics_output_path)
-    plot_epigenomics_heatmap_legend(epigenomics_output_path)
+    plot_proportion_of_cancer_types_with_the_signature(output_dir)
+    plot_epigenomics_heatmap_legend(output_dir)
 
     # Combined p value and plot heatmaps
     compute_fold_change_significance_plot_heatmap(combine_p_values_method,
                                                   window_size,
                                                   tissue_type,
-                                                  combined_output_dir,
+                                                  input_dir,
                                                   numberofSimulations,
                                                   hm_path,
                                                   ctcf_path,
                                                   atac_path,
-                                                  epigenomics_output_path,
+                                                  output_dir,
                                                   cancer_type_signature_cutoff_number_of_mutations_average_probability_df,
                                                   cancer_types,
                                                   sbs_signatures,
@@ -1399,22 +1165,6 @@ def main(cluster_type = TSCC,
     print('\n##########################################################')
     print('All the fold changes are computed. Heatmaps are plotted.')
     print('##########################################################\n')
-
-
-def get_number_of_mutations(signature,cancer_type,cancer_type_signature_number_of_mutations_df,cancer_type_mutation_type_number_of_mutations_df):
-    if signature == ALL_SUBSTITUTIONS:
-        number_of_mutations = cancer_type_mutation_type_number_of_mutations_df[(cancer_type_mutation_type_number_of_mutations_df['mutation_type'] == SUBS) &
-                                                                               (cancer_type_mutation_type_number_of_mutations_df['cancer_type'] == cancer_type)]['number_of_mutations'].values[0]
-    elif signature == ALL_DINUCLEOTIDES:
-        number_of_mutations = cancer_type_mutation_type_number_of_mutations_df[(cancer_type_mutation_type_number_of_mutations_df['mutation_type'] == DINUCS) &
-                                                                               (cancer_type_mutation_type_number_of_mutations_df['cancer_type'] == cancer_type)]['number_of_mutations'].values[0]
-    elif signature == ALL_INDELS:
-        number_of_mutations = cancer_type_mutation_type_number_of_mutations_df[(cancer_type_mutation_type_number_of_mutations_df['mutation_type'] == INDELS) &
-                                                                               (cancer_type_mutation_type_number_of_mutations_df['cancer_type'] == cancer_type)]['number_of_mutations'].values[0]
-    else:
-        number_of_mutations = cancer_type_signature_number_of_mutations_df[(cancer_type_signature_number_of_mutations_df['signature'] == signature) &
-                                                                           (cancer_type_signature_number_of_mutations_df['cancer_type'] == cancer_type)]['number_of_mutations'].values[0]
-    return number_of_mutations
 
 
 def get_minimum_number_of_overlaps_required(signature,
@@ -1479,7 +1229,6 @@ def is_eligible(fold_change,
 
 # Step2 combine p values using Fisher's method
 # [fold_change_list,avg_fold_change,p_value_list,combined_p_value]
-# May 26, 2020
 def step2_combine_p_values(step1_signature2cancer_type2biosample2dna_element2p_value_tuple_dict,
                            heatmaps_main_output_path,
                            combine_p_values_method,
@@ -1640,6 +1389,11 @@ def plot_heatmap(rows,
         # Set cell font size w.r.t. number of columns
         cell_font_size = font_size * 2 / 3
 
+        # # For Graphical Abstract Figure (3 lines)
+        # title_font_size = title_font_size * 3
+        # label_font_size = font_size * 3
+        # cell_font_size = cell_font_size * 3
+
         # Figure Case Study SBS4 Topography across all cancer types
         if (figure_name) and (figure_name == 'Figure_Case_Study_SBS4'):
             title_font_size = title_font_size * 1.75
@@ -1778,6 +1532,7 @@ def prepare_array_plot_heatmap(df,
     avg_fold_change_np_array = fill_rows_and_columns_np_array(name_for_rows, rows, name_for_columns, columns, df)
 
     if remove_columns_rows_with_no_significant_result:
+
         # Delete any row with no significant result
         # Significant result means (q-value <= significance_level and (avg fold change <= depleted_fold_change or avg fold change >= enriched_fold_change))
         rows_index_not_deleted = []
@@ -1785,6 +1540,7 @@ def prepare_array_plot_heatmap(df,
             q_value_list = []
             for column in columns:
                 if df[(df[name_for_rows] == row) & (df[name_for_columns] == column)]['avg_fold_change'].any():
+
                     avg_fold_change_array = df[(df[name_for_rows] == row) & (df[name_for_columns] == column)]['avg_fold_change'].values
                     q_value_array = df[(df[name_for_rows] == row) & (df[name_for_columns] == column)]['q_value'].values
 
@@ -1799,6 +1555,11 @@ def prepare_array_plot_heatmap(df,
 
             q_value_array = np.array(q_value_list)
             if np.any(q_value_array <= significance_level):
+                rows_index_not_deleted.append(True)
+            # For Manuscript Figure4
+            # Do not delete rows SBS7a/b/c/d SBS11 and SBS28 even if there is no significant result to show.
+            elif name_for_rows == 'signature' and name_for_columns == 'cancer_type' and group_name == 'CTCF-human' and \
+                    row in ['SBS7a', 'SBS7b', 'SBS7c', 'SBS7d', 'SBS11', 'SBS28']:
                 rows_index_not_deleted.append(True)
             else:
                 rows_index_not_deleted.append(False)
@@ -1837,8 +1598,11 @@ def prepare_array_plot_heatmap(df,
         columns = np.array(columns)[columns_index_not_deleted]
 
     # For Figure4 PanelA CTCF heatmap
-    # 3 heatmaps for SBS, DBS and ID signatures
+    # One big heatmap for SBS, DBS and ID signatures each signature type are separated by empty row.
     # cancer types at top
+    # figures will under
+    # / oasis / tscc / scratch / burcak / SigProfilerTopographyRuns / combined_pcawg_and_nonpcawg_figures_pdfs / 4th_iteration
+    # / heatmaps_dna_elements_window_size_100_Normal / heatmaps_for_each_dna_element
     if group_name == 'CTCF-human':
         # SBS signatures
         all_subs_maks = [True if i.startswith(ALL_SUBSTITUTIONS) else False for i in rows]
@@ -1954,8 +1718,6 @@ def prepare_array_plot_heatmap(df,
             heatmap_rows_signatures_columns_cancer_types_output_path,
             figure_name)
 
-
-# FEB 11, 2021
 # Plot heatmap
 # For each DNA element
 # For each signature
@@ -2020,8 +1782,6 @@ def plot_epigenomics_heatmap_legend(heatmaps_main_output_path):
     plt.close()
 
 
-
-# FEB 12, 2020
 def plot_proportion_of_cancer_types_with_the_signature(heatmaps_main_output_path):
 
     os.makedirs(os.path.join(heatmaps_main_output_path, FIGURES_MANUSCRIPT), exist_ok=True)
@@ -2098,7 +1858,6 @@ def plot_proportion_of_cancer_types_with_the_signature(heatmaps_main_output_path
 
     plt.close()
 
-# FEB 8, 2020
 def plot_pcawg_heatmap_seismic_colorbar(heatmaps_main_output_path):
     os.makedirs(os.path.join(heatmaps_main_output_path, FIGURES_MANUSCRIPT), exist_ok=True)
     heatmap_output_path=os.path.join(heatmaps_main_output_path, FIGURES_MANUSCRIPT)
@@ -2121,7 +1880,6 @@ def plot_pcawg_heatmap_seismic_colorbar(heatmaps_main_output_path):
     plt.close()
 
 
-# FEB 3, 2020
 def plot_pcawg_heatmap_discreet_colorbar(heatmaps_main_output_path):
     os.makedirs(os.path.join(heatmaps_main_output_path, FIGURES_MANUSCRIPT), exist_ok=True)
     heatmap_output_path=os.path.join(heatmaps_main_output_path, FIGURES_MANUSCRIPT)
@@ -2129,7 +1887,6 @@ def plot_pcawg_heatmap_discreet_colorbar(heatmaps_main_output_path):
     # Make a figure and axes with dimensions as desired.
     fig = plt.figure(figsize=(8, 3))
     ax = fig.add_axes([0.05, 0.475, 0.9, 0.15])
-
 
     # If a ListedColormap is used, the length of the bounds array must be
     # one greater than the length of the color list.  The bounds must be
@@ -2321,13 +2078,6 @@ def heatmap_with_pie_chart(data_array,
     plt.close(fig)
 
 
-def get_tissue_type(signature, signature_tissue_type_tuples):
-    for signature_tissue_type_tuple in signature_tissue_type_tuples:
-        signature_in_tuple, tissue_type = signature_tissue_type_tuple
-        if signature == signature_in_tuple:
-            return tissue_type
-    return None
-
 # considered_signatures can be across all tissues and tissue specific mixed
 def fill_data_array(considered_signatures,
                     considered_dna_elements,
@@ -2481,6 +2231,48 @@ def fill_lists(signature, signature_type, df):
             signatures_ylabels_on_the_heatmap.append(cancer_type)
 
     return signatures, signature_signature_type_tuples, signature_tissue_type_tuples, signatures_ylabels_on_the_heatmap
+
+
+def process_dataframes(step1_p_value_df):
+    # step1_p_value_df.dtypes:
+    # signature                         object
+    # cancer_type                       object
+    # cutoff                           float64
+    # number_of_mutations                int64
+    # biosample                         object
+    # dna_element                       object
+    # avg_real_signal                  float64
+    # avg_simulated_signal             float64
+    # fold_change                      float64
+    # min_sim_signal                   float64
+    # max_sim_signal                   float64
+    # p_value                          float64
+    # num_of_sims                        int64
+    # num_of_sims_with_not_nan_avgs     object
+    # real_data_avg_count              float64
+    # sim_avg_count                    float64
+    # sim_signals                       object
+    # dtype: object
+
+    # round
+    step1_p_value_df['avg_real_signal'] = np.around(step1_p_value_df['avg_real_signal'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    step1_p_value_df['avg_simulated_signal'] = np.around(step1_p_value_df['avg_simulated_signal'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    step1_p_value_df['fold_change'] = np.around(step1_p_value_df['fold_change'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    step1_p_value_df['min_sim_signal'] = np.around(step1_p_value_df['min_sim_signal'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    step1_p_value_df['max_sim_signal'] = np.around(step1_p_value_df['max_sim_signal'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    step1_p_value_df['real_data_avg_count'] = np.around(step1_p_value_df['real_data_avg_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    step1_p_value_df['sim_avg_count'] = np.around(step1_p_value_df['sim_avg_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+
+    # drop columns
+    step1_p_value_df.drop(columns=['num_of_sims', 'num_of_sims_with_not_nan_avgs'], inplace=True)
+
+    # rename column names
+    step1_p_value_df.rename(columns={'real_data_avg_count': 'real_mutations_avg_overlaps',
+                                    'sim_avg_count': 'sim_mutations_avg_overlaps'}, inplace=True)
+
+
+    return step1_p_value_df
+
 
 # Pie chart uses step3 results
 # In the pie chart, any signature with at least one significant result is shown.
@@ -2644,7 +2436,6 @@ def plot_heatmaps_rows_signatures_columns_dna_elements_with_pie_charts(step3_q_v
                                    tissue_based = tissue_type)
 
 
-# JAN 20, 2020
 # Enrichment is done in this function.
 # Always ztest
 # one sample or two_sample?
@@ -2761,17 +2552,18 @@ def calculate_fold_change_real_over_sim(plusorMinus,
 
     # Get sim_avg_count
     if (numberofSimulations > 0):
-        if (signature==ALL_SUBSTITUTIONS):
+        if (signature == ALL_SUBSTITUTIONS):
             listofSimulationsSignatureBasedCount = readDataForSimulations(None, None, AGGREGATEDSUBSTITUTIONS, main_combined_output_dir, main_cancer_type, numberofSimulations, occupancy_type,dna_element_to_be_read, ACCUMULATED_COUNT_ARRAY)
-        elif (signature==ALL_INDELS):
+        elif (signature == ALL_INDELS):
             listofSimulationsSignatureBasedCount = readDataForSimulations(None, None, AGGREGATEDINDELS, main_combined_output_dir, main_cancer_type, numberofSimulations, occupancy_type,dna_element_to_be_read, ACCUMULATED_COUNT_ARRAY)
-        elif (signature==ALL_DINUCLEOTIDES):
+        elif (signature == ALL_DINUCLEOTIDES):
             listofSimulationsSignatureBasedCount = readDataForSimulations(None, None, AGGREGATEDDINUCS, main_combined_output_dir, main_cancer_type, numberofSimulations, occupancy_type,dna_element_to_be_read, ACCUMULATED_COUNT_ARRAY)
         else:
             combined_output_dir, cancer_type = get_alternative_combined_output_dir_and_cancer_type(main_combined_output_dir, main_cancer_type, signature)
             listofSimulationsSignatureBasedCount = readDataForSimulations(None, signature, SIGNATUREBASED, combined_output_dir, cancer_type, numberofSimulations, occupancy_type,dna_element_to_be_read, ACCUMULATED_COUNT_ARRAY)
 
         if ((listofSimulationsSignatureBasedCount is not None) and listofSimulationsSignatureBasedCount):
+
             # This is the simulations data
             stackedSimulationsSignatureBasedCount = np.vstack(listofSimulationsSignatureBasedCount)
 
@@ -2799,11 +2591,13 @@ def calculate_fold_change_real_over_sim(plusorMinus,
             print('%s %s %s  avg_real_signal:%f avg_sim_signal:%f min_sim_signal:%f max_sim_signal:%f fold_change:%f p_value: %.2E' %(signature, main_cancer_type, dna_element,avg_real_signal,avg_sim_signal,min_sim_signal,max_sim_signal, fold_change, Decimal(pvalue) ))
             print('###############################################################################################################################')
 
-        return [signature, main_cancer_type, cutoff, number_of_mutations, biosample, dna_element, avg_real_signal, avg_sim_signal, fold_change, min_sim_signal, max_sim_signal, pvalue, num_of_sims, num_of_sims_with_not_nan_avgs, real_data_avg_count, sim_avg_count, list(simulations_horizontal_means_array)]
+        # return [signature, main_cancer_type, cutoff, number_of_mutations, biosample, dna_element, avg_real_signal, avg_sim_signal, fold_change, min_sim_signal, max_sim_signal, pvalue, num_of_sims, num_of_sims_with_not_nan_avgs, real_data_avg_count, sim_avg_count, list(simulations_horizontal_means_array)]
+        return [signature, main_cancer_type, cutoff, number_of_mutations, biosample, dna_element, avg_real_signal, avg_sim_signal, fold_change, min_sim_signal, max_sim_signal, pvalue, num_of_sims, num_of_sims_with_not_nan_avgs, real_data_avg_count, sim_avg_count, np.around(simulations_horizontal_means_array, NUMBER_OF_DECIMAL_PLACES_TO_ROUND).tolist()]
     else:
         print('%s %s %s %s nan' %(signature, main_cancer_type, biosample, dna_element))
         if (simulations_horizontal_means_array is not None):
-            return [signature, main_cancer_type, cutoff, number_of_mutations, biosample, dna_element, avg_real_signal, avg_sim_signal, fold_change, min_sim_signal, max_sim_signal, pvalue, num_of_sims, num_of_sims_with_not_nan_avgs, real_data_avg_count, sim_avg_count, list(simulations_horizontal_means_array)]
+            # return [signature, main_cancer_type, cutoff, number_of_mutations, biosample, dna_element, avg_real_signal, avg_sim_signal, fold_change, min_sim_signal, max_sim_signal, pvalue, num_of_sims, num_of_sims_with_not_nan_avgs, real_data_avg_count, sim_avg_count, list(simulations_horizontal_means_array)]
+            return [signature, main_cancer_type, cutoff, number_of_mutations, biosample, dna_element, avg_real_signal, avg_sim_signal, fold_change, min_sim_signal, max_sim_signal, pvalue, num_of_sims, num_of_sims_with_not_nan_avgs, real_data_avg_count, sim_avg_count, np.around(simulations_horizontal_means_array, NUMBER_OF_DECIMAL_PLACES_TO_ROUND).tolist()]
         else:
             return [signature, main_cancer_type, cutoff, number_of_mutations, biosample, dna_element, avg_real_signal, avg_sim_signal, fold_change, min_sim_signal, max_sim_signal, pvalue, num_of_sims, num_of_sims_with_not_nan_avgs, real_data_avg_count, sim_avg_count, None]
 
@@ -2945,7 +2739,6 @@ def writeDictionary(dictPath, dictionary, customJSONEncoder):
     with open(dictPath, 'w') as file:
         file.write(json.dumps(dictionary, cls=customJSONEncoder))
 
-
 def readDictionary(filePath):
     if (os.path.exists(filePath) and (os.path.getsize(filePath) > 0)):
         with open(filePath,'r') as json_data:
@@ -2955,3 +2748,253 @@ def readDictionary(filePath):
         # return None
         # Provide empty dictionary for not to fail for loops on None type dictionary
         return {}
+
+
+# @deprecated
+def heatmap_with_circles_showing_percentage_of_cancer_types(average_fold_change_array,
+                                                            row_signature_labels,
+                                                            column_dna_element_labels,
+                                                            step5_signature2dna_element2lists_dict,
+                                                            depleted_fold_change,
+                                                            enriched_fold_change,
+                                                            ax=None, cmap=None, norm=None, cbar_kw={}, cbarlabel="", **kwargs):
+
+
+    """
+    Create a heatmap from a numpy array and two lists of labels.
+
+    Parameters
+    ----------
+    data
+        A 2D numpy array of shape (N, M).
+    row_labels
+        A list or array of length N with the labels for the rows.
+    col_labels
+        A list or array of length M with the labels for the columns.
+    ax
+        A `matplotlib.axes.Axes` instance to which the heatmap is plotted.  If
+        not provided, use current axes or create a new one.  Optional.
+    cbar_kw
+        A dictionary with arguments to `matplotlib.Figure.colorbar`.  Optional.
+    cbarlabel
+        The label for the colorbar.  Optional.
+    **kwargs
+        All other arguments are forwarded to `imshow`.
+    """
+
+    #nans are handled here
+    # average_fold_change_array = np.ma.masked_invalid(average_fold_change_array)
+    # ax.patch.set(hatch='x', edgecolor='black')
+
+    #################################################################################################
+    ############################### Set the circle radius starts ####################################
+    #################################################################################################
+    circles=[]
+    for signature_index, signature in enumerate(row_signature_labels):
+        for dna_element_index, dna_element in enumerate(column_dna_element_labels):
+
+            if (signature in step5_signature2dna_element2lists_dict) and (dna_element in step5_signature2dna_element2lists_dict[signature]):
+
+                # [enriched_cancer_types, enriched_fold_change_list, enriched_avg_fold_change,enriched_filtered_q_value_list,
+                # depleted_cancer_types, depleted_fold_change_list, depleted_avg_fold_change,depleted_filtered_q_value_list,
+                # cancer_types, fold_change_list, avg_fold_change, number_of_mutations_list, weighted_avg_fold_change, filtered_q_values_list,
+                # denominator_cancer_types, denominator ]
+
+                # ['signature', 'dna_element',
+                #  'enriched_cancer_types', 'enriched_fold_change_list', 'enriched_avg_fold_change',  'enriched_num_of_mutations_list', 'enriched_weighted_avg_fold_change',  'enriched_filtered_q_value_list',
+                #  'depleted_cancer_types', 'depleted_fold_change_list', 'depleted_avg_fold_change',  'depleted_num_of_mutations_list', 'depleted_weighted_avg_fold_change',  'depleted_filtered_q_value_list',
+                #  'cancer_types_with_significant_q_value', 'fold_change_list', 'avg_fold_change',  'num_of_mutations_list', 'weighted_avg_fold_change', 'filtered_q_values_list',
+                #  'cancer_types_having_signature_dna_element', 'len(cancer_types_having_signature_dna_element)']
+
+                number_of_enriched_cancer_types = len(step5_signature2dna_element2lists_dict[signature][dna_element][0])
+                number_of_depleted_cancer_types = len(step5_signature2dna_element2lists_dict[signature][dna_element][6])
+                denominator=step5_signature2dna_element2lists_dict[signature][dna_element][19]
+
+                average_fold_change = average_fold_change_array[signature_index,dna_element_index]
+                if (average_fold_change<depleted_fold_change):
+                    percentage_of_cancer_types=(number_of_depleted_cancer_types/denominator)*100
+                    r = calculate_radius(percentage_of_cancer_types)
+                elif (average_fold_change>enriched_fold_change):
+                    percentage_of_cancer_types=(number_of_enriched_cancer_types/denominator)*100
+                    r = calculate_radius(percentage_of_cancer_types)
+                else:
+                    r=0
+                circles.append(plt.Circle((dna_element_index,signature_index),radius=r))
+            else:
+                r = 0
+                circles.append(plt.Circle((dna_element_index, signature_index), radius=r))
+    #################################################################################################
+    ############################### Set the circle radius ends ######################################
+    #################################################################################################
+
+    col = PatchCollection(circles, array=average_fold_change_array.flatten(), cmap=cmap, norm=norm)
+    ax.add_collection(col)
+    # Create colorbar and display (If you want to display the colorbar uncomment below)
+    # cbar = ax.figure.colorbar(im, ax=ax, **cbar_kw)
+    # cbar.ax.set_ylabel(cbarlabel, rotation=-90, va="bottom",fontsize=80,labelpad=25)
+    # cbar.ax.tick_params(labelsize=80)
+
+    # We want to show all ticks...
+    ax.set_xticks(np.arange(average_fold_change_array.shape[1]))
+    ax.set_yticks(np.arange(average_fold_change_array.shape[0]))
+
+    # Remove '-human' from column_dna_element_labels if any
+    column_dna_element_labels=[column_dna_element[:-6] if column_dna_element.endswith('-human') else column_dna_element for column_dna_element in column_dna_element_labels]
+
+    #ATAC-seq --> Chromatin
+    column_dna_element_labels=['Chromatin' if column_dna_element=='ATAC-seq' else column_dna_element for column_dna_element in column_dna_element_labels]
+
+    if len(row_signature_labels)>30:
+        fontsize=1.3*len(row_signature_labels)
+    else:
+        fontsize=4*len(row_signature_labels)
+
+    # ax.set_xticklabels(column_dna_element_labels, fontsize=50)
+    # ax.set_yticklabels(row_signature_labels, fontsize=50)
+    ax.set_xticklabels(column_dna_element_labels, fontsize=fontsize)
+    ax.set_yticklabels(row_signature_labels, fontsize=fontsize)
+
+    print('################################################################################')
+
+    # Let the horizontal axes labeling appear on top.
+    # Rotate the tick labels and set their alignment.
+
+    # X axis labels at top
+    ax.tick_params(top=True, bottom=False,labeltop=True, labelbottom=False,pad=5)
+    plt.setp(ax.get_xticklabels(), rotation=55, ha="left", rotation_mode="anchor")
+
+    # X axis labels at bottom
+    # ax.tick_params(top=False, bottom=True, labeltop=False, labelbottom=True, pad=5)
+    # plt.setp(ax.get_xticklabels(), rotation=55, ha="right", rotation_mode="anchor")
+
+    # Turn spines off and create white grid.
+    # for edge, spine in ax.spines.items():
+        # spine.set_visible(False)
+
+    # We want to show all ticks...
+    ax.set_xticks(np.arange(average_fold_change_array.shape[1]+1)-.5, minor=True)
+    ax.set_yticks(np.arange(average_fold_change_array.shape[0]+1)-.5, minor=True)
+
+    # ax.grid(which="minor", color="w", linestyle='-', linewidth=3)
+    ax.grid(which="minor", color="black", linestyle='-', linewidth=3)
+
+    ax.tick_params(which="minor", bottom=False, left=False)
+
+
+# @deprecated
+def annotate_heatmap(im, data=None, valfmt="{x:.2f}", textcolors=["black", "white"], threshold=None, **textkw):
+    """
+    A function to annotate a heatmap.
+
+    Parameters
+    ----------
+    im
+        The AxesImage to be labeled.
+    data
+        Data used to annotate.  If None, the image's data is used.  Optional.
+    valfmt
+        The format of the annotations inside the heatmap.  This should either
+        use the string format method, e.g. "$ {x:.2f}", or be a
+        `matplotlib.ticker.Formatter`.  Optional.
+    textcolors
+        A list or array of two color specifications.  The first is used for
+        values below a threshold, the second for those above.  Optional.
+    threshold
+        Value in data units according to which the colors from textcolors are
+        applied.  If None (the default) uses the middle of the colormap as
+        separation.  Optional.
+    **kwargs
+        All other arguments are forwarded to each call to `text` used to create
+        the text labels.
+    """
+
+    if not isinstance(data, (list, np.ndarray)):
+        data = im.get_array()
+
+    # Normalize the threshold to the images color range.
+    if threshold is not None:
+        threshold = im.norm(threshold)
+    else:
+        threshold = im.norm(data.max())/2.
+
+    # Set default alignment to center, but allow it to be
+    # overwritten by textkw.
+    kw = dict(horizontalalignment="center",
+              verticalalignment="center")
+    kw.update(textkw)
+
+    # Get the formatter in case a string is supplied
+    if isinstance(valfmt, str):
+        valfmt = mpl.ticker.StrMethodFormatter(valfmt)
+
+    # Loop over the data and create a `Text` for each "pixel".
+    # Change the text's color depending on the data.
+    texts = []
+    for i in range(data.shape[0]):
+        for j in range(data.shape[1]):
+            # kw.update(color=textcolors[int(im.norm(data[i, j]) > threshold)])
+            kw.update(color='white')
+            text = im.axes.text(j, i, valfmt(data[i, j], None), **kw)
+            texts.append(text)
+
+    return texts
+
+# @deprecated
+# [fold_change_list, avg_fold_change, p_value_list, combined_p_value,q_value]
+def write_dictionary_as_dataframe_step4_filtered_q_value(step4_signature2cancer_type2dna_element2filtered_q_list_dict,filepath):
+    L = sorted([(signature, cancer_type, dna_element, filtered_q_value_list[0], filtered_q_value_list[1], filtered_q_value_list[2], filtered_q_value_list[3], filtered_q_value_list[4], filtered_q_value_list[5])
+                for signature, a in step4_signature2cancer_type2dna_element2filtered_q_list_dict.items()
+                 for cancer_type, b in a.items()
+                  for dna_element, filtered_q_value_list in b.items()])
+    df = pd.DataFrame(L, columns=['signature', 'cancer_type', 'dna_element',
+                                  'encode_element_list', 'fold_change_list', 'avg_fold_change', 'p_value_list', 'combined_p_value','filtered_q_value'])
+    df.to_csv(filepath, sep='\t', header=True, index=False)
+
+    return df
+
+# @deprecated
+# Cancer types pooled. Combined q-values
+# [enriched_cancer_types,enriched_fold_change_list,enriched_avg_fold_change,enriched_filtered_q_value_list,
+# depleted_cancer_types,depleted_fold_change_list,depleted_avg_fold_change,depleted_filtered_q_value_list,
+# cancer_types,fold_change_list,avg_fold_change,filtered_q_values_list]
+def write_dictionary_as_dataframe_step5_enriched_depleted_cancer_types(signature2dna_element2lists_dict,filepath):
+    L = sorted([(signature, dna_element,
+                 #cancer_types_list[0], cancer_types_list[1], cancer_types_list[2], cancer_types_list[3],cancer_types_list[4], cancer_types_list[5],
+                 #cancer_types_list[6], cancer_types_list[7], cancer_types_list[8], cancer_types_list[9], cancer_types_list[10], cancer_types_list[11],
+                 cancer_types_list[12], cancer_types_list[13], cancer_types_list[14], cancer_types_list[15], cancer_types_list[16], cancer_types_list[17],
+                 cancer_types_list[18], cancer_types_list[19])
+                for signature, a in signature2dna_element2lists_dict.items()
+                 for dna_element, cancer_types_list in a.items()])
+    df = pd.DataFrame(L, columns=['signature', 'dna_element',
+                                  #'enriched_cancer_types','enriched_fold_change_list','enriched_avg_fold_change','enriched_num_of_mutations_list','enriched_weighted_avg_fold_change','enriched_filtered_q_value_list',
+                                  #'depleted_cancer_types', 'depleted_fold_change_list', 'depleted_avg_fold_change','depleted_num_of_mutations_list','depleted_weighted_avg_fold_change', 'depleted_filtered_q_value_list',
+                                  'cancer_types_with_significant_q_value','fold_change_list','avg_fold_change','num_of_mutations_list','weighted_avg_fold_change', 'filtered_q_values_list',
+                                  'cancer_types_having_signature_dna_element','len(cancer_types_having_signature_dna_element)'])
+    df.to_csv(filepath, sep='\t', header=True, index=False)
+
+    return df
+
+# @deprecated
+def get_number_of_mutations(signature,cancer_type,cancer_type_signature_number_of_mutations_df,cancer_type_mutation_type_number_of_mutations_df):
+    if signature == ALL_SUBSTITUTIONS:
+        number_of_mutations = cancer_type_mutation_type_number_of_mutations_df[(cancer_type_mutation_type_number_of_mutations_df['mutation_type'] == SUBS) &
+                                                                               (cancer_type_mutation_type_number_of_mutations_df['cancer_type'] == cancer_type)]['number_of_mutations'].values[0]
+    elif signature == ALL_DINUCLEOTIDES:
+        number_of_mutations = cancer_type_mutation_type_number_of_mutations_df[(cancer_type_mutation_type_number_of_mutations_df['mutation_type'] == DINUCS) &
+                                                                               (cancer_type_mutation_type_number_of_mutations_df['cancer_type'] == cancer_type)]['number_of_mutations'].values[0]
+    elif signature == ALL_INDELS:
+        number_of_mutations = cancer_type_mutation_type_number_of_mutations_df[(cancer_type_mutation_type_number_of_mutations_df['mutation_type'] == INDELS) &
+                                                                               (cancer_type_mutation_type_number_of_mutations_df['cancer_type'] == cancer_type)]['number_of_mutations'].values[0]
+    else:
+        number_of_mutations = cancer_type_signature_number_of_mutations_df[(cancer_type_signature_number_of_mutations_df['signature'] == signature) &
+                                                                           (cancer_type_signature_number_of_mutations_df['cancer_type'] == cancer_type)]['number_of_mutations'].values[0]
+    return number_of_mutations
+
+
+# @deprecated
+def get_tissue_type(signature, signature_tissue_type_tuples):
+    for signature_tissue_type_tuple in signature_tissue_type_tuples:
+        signature_in_tuple, tissue_type = signature_tissue_type_tuple
+        if signature == signature_in_tuple:
+            return tissue_type
+    return None

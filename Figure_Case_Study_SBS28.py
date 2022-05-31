@@ -1,5 +1,12 @@
+# !/usr/bin/env python3
+
+# Author: burcakotlu
+
+# Contact: burcakotlu@eng.ucsd.edu
+
 # Figure6
 # Figure Case Study SBS28
+
 # Lung-AdenoCA POLE-proficient
 # Stomach-AdenoCA POLE-proficient
 
@@ -14,12 +21,15 @@ import os
 import sys
 import numpy as np
 import pandas as pd
-from functools import reduce
-from collections import OrderedDict
-
-from matplotlib import pyplot as plt
 import matplotlib as mpl
 import matplotlib.cm as matplotlib_cm
+
+from matplotlib import pyplot as plt
+from numpy import dot
+from numpy.linalg import norm
+
+from functools import reduce
+from collections import OrderedDict
 
 from Combined_PCAWG_nonPCAWG_Occupancy_ReplicationTime_Processivity import generate_occupancy_pdfs
 from Combined_PCAWG_nonPCAWG_Occupancy_ReplicationTime_Processivity import generate_replication_time_pdfs
@@ -38,6 +48,7 @@ from Combined_PCAWG_nonPCAWG_Strand_Bias_Figures import REPLICATIONSTRANDBIAS
 from Combined_PCAWG_nonPCAWG_Strand_Bias_Figures import PCAWG
 from Combined_PCAWG_nonPCAWG_Strand_Bias_Figures import nonPCAWG
 from Combined_PCAWG_nonPCAWG_Strand_Bias_Figures import MUTOGRAPHS
+from Combined_PCAWG_nonPCAWG_Strand_Bias_Figures import ODDS_RATIO
 
 from Combined_PCAWG_nonPCAWG_Strand_Bias_Figures import main as strand_bias_main
 
@@ -57,7 +68,6 @@ from Combined_PCAWG_nonPCAWG_Heatmaps_For_DNA_Elements import DATA_FILES
 from Combined_PCAWG_nonPCAWG_Heatmaps_For_DNA_Elements import EXCEL_FILES
 from Combined_PCAWG_nonPCAWG_Heatmaps_For_DNA_Elements import DICTIONARIES
 from Combined_PCAWG_nonPCAWG_Heatmaps_For_DNA_Elements import fill_rows_and_columns_np_array
-
 from Combined_PCAWG_nonPCAWG_Heatmaps_For_DNA_Elements import enriched
 from Combined_PCAWG_nonPCAWG_Heatmaps_For_DNA_Elements import depleted
 from Combined_PCAWG_nonPCAWG_Heatmaps_For_DNA_Elements import heatmap
@@ -274,10 +284,10 @@ def plot_heatmap(rows,
 
         # Put text in each heatmap cell
         for row_index, row in enumerate(rows, 0):
-            if row == 'POLE hypermutators':
+            if row == rows[0]: # POLE deficient
                 df = df1
                 row = 'SBS28'
-            elif row == 'non-POLE hypermutators':
+            elif row == rows[1]: # POLE proficient
                 df = df2
                 row = 'SBS28'
             print('#####################################################')
@@ -336,7 +346,7 @@ def figure_case_study_SBS28_epigenomics_heatmap(
         plot_output_path,
         signatures, #  ['SBS28']
         signature_signature_type_tuples, # [('SBS28', SBS)]
-        signatures_ylabels_on_the_heatmap, # [('POLE hypermutators'), ('non-POLE hypermutators') ]
+        signatures_ylabels_on_the_heatmap, # [('POLE hypermutators'), ('non-POLE hypermutators') ] [('POLE-'), ('POLE+') ]
         cancer_types,
         cancer_types_pole_hypermutators,
         cancer_types_non_pole_hypermutators,
@@ -412,9 +422,12 @@ def figure_case_study_SBS28_epigenomics_heatmap(
     name_for_rows = 'signature'
     rows = signatures
 
-    name_for_columns='dna_element'
+    name_for_columns = 'dna_element'
     all_dna_elements = step3_q_value_df['dna_element'].unique()
     all_dna_elements = sorted(all_dna_elements, key=natural_key)
+
+    # Remove open chromatin --- remove ATAC-seq
+    all_dna_elements = [dna_element for dna_element in all_dna_elements if 'ATAC' not in dna_element]
     columns = all_dna_elements
 
     group_name = 'SBS28'
@@ -475,7 +488,10 @@ def plotSBS(matrix_path, output_path, project, plot_type, percentage=False, cust
             if first_line[0][5] != "]" and first_line[0][1] != ">":
                 sys.exit("The matrix does not match the correct SBS96 format. Please check you formatting and rerun this plotting function.")
 
-        output_file_path = os.path.join(output_path + 'SBS_96_plots_' + project + '.png')
+        if project == 'SBS28 in POLE+':
+            output_file_path = os.path.join(output_path + 'SBS_96_plots_' + 'SBS28_in_POLE_proficient' + '.png')
+        else:
+            output_file_path = os.path.join(output_path + 'SBS_96_plots_' + 'SBS28_in_POLE_deficient' + '.png')
         # pp = PdfPages(output_path + 'SBS_96_plots_' + project + '.pdf')
 
         mutations = OrderedDict()
@@ -567,18 +583,12 @@ def plotSBS(matrix_path, output_path, project, plot_type, percentage=False, cust
                     x += .159
 
                 yText = y3 + .06
-                plt.text(.1, yText, 'C>A', fontsize=55, fontweight='bold', fontname='Arial',
-                         transform=plt.gcf().transFigure)
-                plt.text(.255, yText, 'C>G', fontsize=55, fontweight='bold', fontname='Arial',
-                         transform=plt.gcf().transFigure)
-                plt.text(.415, yText, 'C>T', fontsize=55, fontweight='bold', fontname='Arial',
-                         transform=plt.gcf().transFigure)
-                plt.text(.575, yText, 'T>A', fontsize=55, fontweight='bold', fontname='Arial',
-                         transform=plt.gcf().transFigure)
-                plt.text(.735, yText, 'T>C', fontsize=55, fontweight='bold', fontname='Arial',
-                         transform=plt.gcf().transFigure)
-                plt.text(.89, yText, 'T>G', fontsize=55, fontweight='bold', fontname='Arial',
-                         transform=plt.gcf().transFigure)
+                plt.text(.1, yText, 'C>A', fontsize=55, fontweight='bold', fontname='Arial', transform=plt.gcf().transFigure)
+                plt.text(.255, yText, 'C>G', fontsize=55, fontweight='bold', fontname='Arial', transform=plt.gcf().transFigure)
+                plt.text(.415, yText, 'C>T', fontsize=55, fontweight='bold', fontname='Arial', transform=plt.gcf().transFigure)
+                plt.text(.575, yText, 'T>A', fontsize=55, fontweight='bold', fontname='Arial', transform=plt.gcf().transFigure)
+                plt.text(.735, yText, 'T>C', fontsize=55, fontweight='bold', fontname='Arial', transform=plt.gcf().transFigure)
+                plt.text(.89, yText, 'T>G', fontsize=55, fontweight='bold', fontname='Arial', transform=plt.gcf().transFigure)
 
                 if y <= 4:
                     y += 4
@@ -596,8 +606,7 @@ def plotSBS(matrix_path, output_path, project, plot_type, percentage=False, cust
                                str(round(ytick_offest * 3, 1)) + "%", str(round(ytick_offest * 4, 1)) + "%"]
                 else:
                     ylabs = [0, ytick_offest, ytick_offest * 2, ytick_offest * 3, ytick_offest * 4]
-                    ylabels = [0, ytick_offest, ytick_offest * 2,
-                               ytick_offest * 3, ytick_offest * 4]
+                    ylabels = [0, ytick_offest, ytick_offest * 2, ytick_offest * 3, ytick_offest * 4]
 
                 labs = np.arange(0.375, 96.375, 1)
 
@@ -636,8 +645,15 @@ def plotSBS(matrix_path, output_path, project, plot_type, percentage=False, cust
                     plt.text(0.045, 0.75, sample, fontsize=60, weight='bold', color='black', fontname="Arial",
                              transform=plt.gcf().transFigure)
                 else:
-                    plt.text(0.045, 0.75, sample + ": " + "{:,}".format(int(total_count)) + " subs", fontsize=60,
-                             weight='bold', color='black', fontname="Arial", transform=plt.gcf().transFigure)
+                    plt.text(0.045, 0.75, sample, fontsize=60, weight='bold', color='black', fontname="Arial", transform=plt.gcf().transFigure)
+                    if project == 'SBS28 in POLE+':
+                        plt.text(0.877, 0.75, "{:,}".format(int(total_count)) + " subs",
+                             # horizontalalignment='right', verticalalignment='top',
+                             fontsize=60, weight='bold', color='black', fontname="Arial", transform=plt.gcf().transFigure)
+                    elif project == 'SBS28 in POLE-':
+                        plt.text(0.867, 0.75, "{:,}".format(int(total_count)) + " subs",
+                             # horizontalalignment='right', verticalalignment='top',
+                             fontsize=60, weight='bold', color='black', fontname="Arial", transform=plt.gcf().transFigure)
 
                 custom_text_upper_plot = ''
                 try:
@@ -809,12 +825,12 @@ def ad_hoc_plot_SBS28_processivity_figures(plot_output_path,
         # Plot the circles with color
         for signature_index, signature_tuple in enumerate(rows_sbs_signatures):
             signature, pole_type = signature_tuple
-            # rows_sbs_signatures = [('SBS28', 'POLE hypermutators'), ('SBS28', 'non-POLE hypermutators')]
+            # rows_sbs_signatures = [('SBS28', 'POLE deficient'), ('SBS28', 'POLE proficient')]
 
-            if pole_type == 'POLE hypermutators':
+            if pole_type == 'POLE deficient':
                 number_of_processive_groups_column_name = 'avg_number_of_processive_groups'
                 signature_processive_group_length_properties_df = across_all_cancer_types_pooled_processivity_POLE_hypermutators_df
-            elif pole_type == 'non-POLE hypermutators':
+            elif pole_type == 'POLE proficient':
                 number_of_processive_groups_column_name = 'avg_number_of_processive_groups'
                 signature_processive_group_length_properties_df = across_all_cancer_types_pooled_processivity_non_POLE_hypermutators_df
 
@@ -923,11 +939,12 @@ def figure_case_study_strand_coordinated_mutagenesis(plot_output_path,
                                                      cosmic_release_version,
                                                      figure_file_extension):
 
-    rows_sbs_signatures = [('SBS28', 'POLE hypermutators'), ('SBS28', 'non-POLE hypermutators')]
-    rows_signatures_on_the_heatmap = ['POLE hypermutators', 'non-POLE hypermutators']
+    rows_sbs_signatures = [('SBS28', 'POLE deficient'), ('SBS28', 'POLE proficient')]
+    rows_signatures_on_the_heatmap = ['POLE-', 'POLE+']
 
-    cancer_types_POLE_hypermutators = ['ColoRect-AdenoCA', 'Uterus-AdenoCA', 'ESCC']
-    cancer_types_non_POLE_hypermutators = ['Lung-AdenoCA', 'Stomach-AdenoCA']
+    cancer_types_POLE_hypermutators = ['ColoRect-AdenoCA', 'Uterus-AdenoCA', 'ESCC'] # same for discreet mode and prob_mode_05
+    # cancer_types_non_POLE_hypermutators = ['Lung-AdenoCA', 'Stomach-AdenoCA'] # discreet mode
+    cancer_types_non_POLE_hypermutators = ['Lung-AdenoCA', 'Stomach-AdenoCA', 'Panc-AdenoCA', 'Eso-AdenoCA'] # prob_mode_05
 
     processivity_significance_level = 0.05
     minimum_required_processive_group_length = 2
@@ -972,38 +989,58 @@ def figure_case_study_strand_coordinated_mutagenesis(plot_output_path,
 
 
 def main():
-    plot_mutational_context = False # Done
-    occupancy = False  # done
-    strand_coordinated_mutagenesis = False # done
-    replication_time = False # Done
-    strand_bias = False # done
-    epigenomics_heatmap = True
+    plot_mutational_context = False
+    calculate_cosine_similarity = False
+    occupancy = True
+    replication_time = False
+    strand_bias = False
+    strand_coordinated_mutagenesis = False
+    epigenomics_heatmap = False
 
     # Common parameters
     figure_types = [COSMIC, MANUSCRIPT]
-    combined_output_path = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'SigProfilerTopographyRuns', 'Combined_PCAWG_nonPCAWG_4th_iteration')
 
+    # discreet_mode input directory
+    # combined_output_path = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'SigProfilerTopographyRuns', 'Combined_PCAWG_nonPCAWG_4th_iteration')
+
+    # discreet_mode input directory
+    # plot_output_path = os.path.join('/oasis', 'tscc', 'scratch', 'burcak',
+    #                                 'SigProfilerTopographyRuns',
+    #                                 'combined_pcawg_and_nonpcawg_figures_pdfs',
+    #                                 '4th_iteration',
+    #                                 'Figure_Case_Study_SBS28/')
+
+
+    # prob_mode_05 input directory
+    combined_output_path = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'SigProfilerTopographyRuns',
+                                        'Combined_PCAWG_nonPCAWG_prob_mode_05')
+
+    # prob_mode_05 output directory
     plot_output_path = os.path.join('/oasis', 'tscc', 'scratch', 'burcak',
                                     'SigProfilerTopographyRuns',
                                     'combined_pcawg_and_nonpcawg_figures_pdfs',
-                                    '4th_iteration',
+                                    'prob_mode_05',
                                     'Figure_Case_Study_SBS28/')
+
 
     os.makedirs(plot_output_path, exist_ok=True)
 
-    # non-POLE hypermutators
+    # POLE+
     # POLE proficient samples
-    cancer_types = ['Lung-AdenoCA', 'Stomach-AdenoCA']
-    cancer_types_text = 'SBS28_non-POLE_hypermutator_samples'
-    sub_figure_type = 'non-POLE hypermutators' # for occupancy
-    # sub_figure_type = 'SBS28 non-POLE hypermutators'
+    # non-POLE hypermutators
+    cancer_types = ['Lung-AdenoCA', 'Stomach-AdenoCA'] # discreet_mode
+    cancer_types = ['Lung-AdenoCA', 'Stomach-AdenoCA', 'Panc-AdenoCA', 'Eso-AdenoCA'] # prob_mode_05
+    mutational_profile_top_left_text = 'SBS28 in POLE+'
+    # sub_figure_type = 'POLE+' # for occupancy and replication time - figures are under figures_cosmic directory
+    sub_figure_type = 'SBS28 POLE+' # for strand bias - figures are under strand_bias directory
 
-    # # POLE hypermutators
+    # # POLE-
     # # POLE deficient samples
+    # # POLE hypermutators
     # cancer_types = ['ColoRect-AdenoCA', 'Uterus-AdenoCA', 'ESCC']
-    # cancer_types_text = 'SBS28_POLE_hypermutator_samples'
-    # sub_figure_type = 'POLE hypermutators' # for occupancy
-    # sub_figure_type = 'SBS28 POLE hypermutators'
+    # mutational_profile_top_left_text = 'SBS28 in POLE-'
+    # sub_figure_type = 'POLE-' # for occupancy and replication time - figures are under figures_cosmic
+    # sub_figure_type = 'SBS28 POLE-' # for strand bias - figures are under strand_bias directory
 
     # cancer_types = ['ColoRect-AdenoCA', 'Uterus-AdenoCA', 'ESCC', 'Lung-AdenoCA', 'Stomach-AdenoCA']
 
@@ -1016,9 +1053,9 @@ def main():
     numberofSimulations = 100
 
     if epigenomics_heatmap:
+        # Figure SBS28.png is under /oasis/tscc/scratch/burcak/SigProfilerTopographyRuns/combined_pcawg_and_nonpcawg_figures_pdfs/4th_iteration/Figure_Case_Study_SBS28
 
         combine_p_values_method = 'fisher'
-        window_size = 100
         depleted_fold_change = 0.95
         enriched_fold_change = 1.05
         significance_level = 0.05
@@ -1031,11 +1068,20 @@ def main():
         signature_cancer_type_number_of_mutations_for_ctcf = AT_LEAST_1K_CONSRAINTS
 
         step1_data_ready = True
+        window_size = 100
         tissue_type = 'Normal'
         heatmaps_dir_name = "heatmaps_dna_elements_window_size_%s_%s" % (window_size, tissue_type)
+
+        # # discreet_mode
+        # heatmaps_main_output_path = os.path.join('/oasis', 'tscc', 'scratch', 'burcak', 'SigProfilerTopographyRuns',
+        #                                          'combined_pcawg_and_nonpcawg_figures_pdfs', '4th_iteration',
+        #                                          heatmaps_dir_name)
+
+        # prob_mode_05
         heatmaps_main_output_path = os.path.join('/oasis', 'tscc', 'scratch', 'burcak', 'SigProfilerTopographyRuns',
-                                                 'combined_pcawg_and_nonpcawg_figures_pdfs', '4th_iteration',
+                                                 'combined_pcawg_and_nonpcawg_figures_pdfs', 'prob_mode_05',
                                                  heatmaps_dir_name)
+
 
         hm_path = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'data', 'ENCODE', 'GRCh37', 'HM')
         ctcf_path = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'data', 'ENCODE', 'GRCh37', 'CTCF')
@@ -1056,12 +1102,18 @@ def main():
         # Order must be consistent in these 4 lists below
         signatures = ['SBS28']
         signature_signature_type_tuples = [('SBS28', SBS)]
-        signatures_ylabels_on_the_heatmap = [('POLE hypermutators'), ('non-POLE hypermutators') ]
+        signatures_ylabels_on_the_heatmap = [('POLE-'), ('POLE+') ]
         figure_type = MANUSCRIPT
 
-        cancer_types = ['ColoRect-AdenoCA', 'Uterus-AdenoCA', 'ESCC', 'Lung-AdenoCA', 'Stomach-AdenoCA']
+        # # discreet_mode
+        # cancer_types = ['ColoRect-AdenoCA', 'Uterus-AdenoCA', 'ESCC', 'Lung-AdenoCA', 'Stomach-AdenoCA']
+        # cancer_types_pole_hypermutators = ['ColoRect-AdenoCA', 'Uterus-AdenoCA', 'ESCC']
+        # cancer_types_non_pole_hypermutators = ['Lung-AdenoCA', 'Stomach-AdenoCA']
+
+        # prob_mode_05
+        cancer_types = ['ColoRect-AdenoCA', 'Uterus-AdenoCA', 'ESCC', 'Lung-AdenoCA', 'Stomach-AdenoCA', 'Panc-AdenoCA', 'Eso-AdenoCA']
         cancer_types_pole_hypermutators = ['ColoRect-AdenoCA', 'Uterus-AdenoCA', 'ESCC']
-        cancer_types_non_pole_hypermutators = ['Lung-AdenoCA', 'Stomach-AdenoCA']
+        cancer_types_non_pole_hypermutators = ['Lung-AdenoCA', 'Stomach-AdenoCA', 'Panc-AdenoCA', 'Eso-AdenoCA']
 
         figure_case_study_SBS28_epigenomics_heatmap(
             combined_output_path,
@@ -1092,16 +1144,70 @@ def main():
             cosmic_release_version,
             figure_file_extension)
 
+    if calculate_cosine_similarity:
+        discreet_mode = False
+
+        if discreet_mode:
+            pole_deficient_df = pd.read_csv(
+                '/oasis/tscc/scratch/burcak/SigProfilerTopographyRuns/combined_pcawg_and_nonpcawg_figures_pdfs/4th_iteration/Figure_Case_Study_SBS28/SBS28_POLE_deficient.SBS96.all',
+                sep='\t', header=0)
+            pole_proficient_df = pd.read_csv(
+                '/oasis/tscc/scratch/burcak/SigProfilerTopographyRuns/combined_pcawg_and_nonpcawg_figures_pdfs/4th_iteration/Figure_Case_Study_SBS28/SBS28_POLE_proficient.SBS96.all',
+                sep='\t', header=0)
+        else:
+            pole_deficient_df = pd.read_csv(
+                '/oasis/tscc/scratch/burcak/SigProfilerTopographyRuns/combined_pcawg_and_nonpcawg_figures_pdfs/prob_mode_05/Figure_Case_Study_SBS28/SBS28_POLE_deficient.SBS96.all',
+                sep='\t', header=0)
+            pole_proficient_df = pd.read_csv(
+                '/oasis/tscc/scratch/burcak/SigProfilerTopographyRuns/combined_pcawg_and_nonpcawg_figures_pdfs/prob_mode_05/Figure_Case_Study_SBS28/SBS28_POLE_proficient.SBS96.all',
+                sep='\t', header=0)
+
+
+        print('pole_deficient_df.shape:', pole_deficient_df.shape, 'pole_deficient_df.columns.values:', pole_deficient_df.columns.values)
+        print(type(pole_deficient_df['SBS28 in POLE-'].values), pole_deficient_df['SBS28 in POLE-'].values)
+        print('pole_proficient_df.shape:', pole_proficient_df.shape, 'pole_proficient_df.columns.values:', pole_proficient_df.columns.values)
+        print(type(pole_proficient_df['SBS28 in POLE+'].values), pole_proficient_df['SBS28 in POLE+'].values)
+        arr1 = pole_deficient_df['SBS28 in POLE-'].values
+        arr2 = pole_proficient_df['SBS28 in POLE+'].values
+        cosine_similarity = dot(arr1, arr2) / (norm(arr1) * norm(arr2))
+        print('Cosine similarity:', cosine_similarity)
 
     if plot_mutational_context:
+        discreet_mode = False
+
+        # POLE+
+        # POLE proficient samples
+        # non-POLE hypermutators
+        # cancer_types = ['Lung-AdenoCA', 'Stomach-AdenoCA']  # discreet_mode
+        # cancer_types = ['Lung-AdenoCA', 'Stomach-AdenoCA', 'Panc-AdenoCA', 'Eso-AdenoCA']  # prob_mode_05
+        # mutational_profile_top_left_text = 'SBS28 in POLE+'
+
+        # # POLE-
+        # # POLE deficient samples
+        # # POLE hypermutators
+        cancer_types = ['ColoRect-AdenoCA', 'Uterus-AdenoCA', 'ESCC'] # same for discreet_mode and prob_mode_05
+        mutational_profile_top_left_text = 'SBS28 in POLE-'
+
         signature = 'SBS28'
 
+        # # discreet_mode
+        # cancer_type2source_cancer_type_tuples_dict = {
+        #     'ColoRect-AdenoCA': [(PCAWG, 'ColoRect-AdenoCA'), (nonPCAWG, 'ColoRect-AdenoCa')],
+        #     'Uterus-AdenoCA': [(PCAWG, 'Uterus-AdenoCA')],
+        #     'ESCC': [(MUTOGRAPHS, 'ESCC')],
+        #     'Lung-AdenoCA': [(PCAWG, 'Lung-AdenoCA'), (nonPCAWG, 'Lung-AdenoCa')],
+        #     'Stomach-AdenoCA': [(PCAWG, 'Stomach-AdenoCA'), (nonPCAWG, 'Stomach-AdenoCa')]
+        # }
+
+        # prob_mode_05
         cancer_type2source_cancer_type_tuples_dict = {
             'ColoRect-AdenoCA': [(PCAWG, 'ColoRect-AdenoCA'), (nonPCAWG, 'ColoRect-AdenoCa')],
             'Uterus-AdenoCA': [(PCAWG, 'Uterus-AdenoCA')],
             'ESCC': [(MUTOGRAPHS, 'ESCC')],
             'Lung-AdenoCA': [(PCAWG, 'Lung-AdenoCA'), (nonPCAWG, 'Lung-AdenoCa')],
-            'Stomach-AdenoCA': [(PCAWG, 'Stomach-AdenoCA'), (nonPCAWG, 'Stomach-AdenoCa')]
+            'Stomach-AdenoCA': [(PCAWG, 'Stomach-AdenoCA'), (nonPCAWG, 'Stomach-AdenoCa')],
+            'Panc-AdenoCA' : [(PCAWG, 'Panc-AdenoCA'), (nonPCAWG, 'Panc-AdenoCa')],
+            'Eso-AdenoCA' : [(PCAWG, 'Eso-AdenoCA'), (nonPCAWG, 'Eso-AdenoCa')]
         }
 
         all_df_list = []
@@ -1205,12 +1311,14 @@ def main():
                     # A[C>A]C                         0
                     # A[C>A]G                         0
 
-                    # Discreet Mode: 0 or 1 * merged_df[matrix_sample]
-                    merged_df.loc[(merged_df[signature] < cutoff), prob_sample] = 0
-                    merged_df.loc[(merged_df[signature] >= cutoff), prob_sample] = merged_df[matrix_sample]
-
-                    # Probability Mode: prob * merged_df[matrix_sample]
-                    # merged_df[prob_sample] = merged_df[signature] * merged_df[matrix_sample]
+                    if discreet_mode:
+                        # Discreet Mode: 0 or 1 * merged_df[matrix_sample]
+                        merged_df.loc[(merged_df[signature] < cutoff), prob_sample] = 0
+                        merged_df.loc[(merged_df[signature] >= cutoff), prob_sample] = merged_df[matrix_sample]
+                    else:
+                        # Probability Mode: prob * merged_df[matrix_sample]
+                        # merged_df[matrix_sample] contains number of mutations
+                        merged_df[prob_sample] = merged_df[signature] * merged_df[matrix_sample]
 
                     merged_df = merged_df[[matrix_mutation_type_column, prob_sample]]
                     merged_df[prob_sample] = merged_df[prob_sample].astype(np.int32)
@@ -1239,23 +1347,41 @@ def main():
         # file_path = os.path.join(output_path, file_name)
         # all_df.to_csv(file_path, sep='\t', index=False, header=True)
 
-        column_name = cancer_types_text
+        column_name = mutational_profile_top_left_text
         # all_df[column_name] = all_df.mean(axis=1)
         all_df[column_name] = all_df.iloc[:, 1:].mean(axis=1)
 
         all_df[column_name] = all_df[column_name].astype(np.int32)
         all_df.drop((all_df.columns.values[1:-1]), axis=1, inplace=True)
 
-        file_name = cancer_types_text + '.SBS96.all'
+        if mutational_profile_top_left_text == 'SBS28 in POLE+':
+            file_name = 'SBS28_POLE_proficient.SBS96.all'
+        else:
+            file_name = 'SBS28_POLE_deficient.SBS96.all'
         SBS96_all_path  = os.path.join(plot_output_path, file_name)
         all_df.to_csv(SBS96_all_path, sep='\t', header=True, index=False)
 
-        plotSBS(SBS96_all_path, plot_output_path, cancer_types_text, "96", percentage=False)
+        plotSBS(SBS96_all_path, plot_output_path, mutational_profile_top_left_text, "96", percentage=False)
 
     if occupancy:
-        # dna_elements = [(CTCF, EPIGENOMICS_OCCUPANCY), (NUCLEOSOME, NUCLEOSOME_OCCUPANCY)]
+        # figures are under figures_cosmic directory
+
+        # POLE+
+        # POLE proficient samples
+        # non-POLE hypermutators
+        # cancer_types = ['Lung-AdenoCA', 'Stomach-AdenoCA']  # discreet_mode
+        # cancer_types = ['Lung-AdenoCA', 'Stomach-AdenoCA', 'Panc-AdenoCA', 'Eso-AdenoCA']  # prob_mode_05
+        # sub_figure_type = 'POLE+'  # for strand bias - figures are under strand_bias directory
+
+        # # POLE-
+        # # POLE deficient samples
+        # # POLE hypermutators
+        cancer_types = ['ColoRect-AdenoCA', 'Uterus-AdenoCA', 'ESCC'] # same for discreet_mode and prob_mode_05
+        sub_figure_type = 'POLE-'
+
+        dna_elements = [(CTCF, EPIGENOMICS_OCCUPANCY), (NUCLEOSOME, NUCLEOSOME_OCCUPANCY)]
         # dna_elements = [(NUCLEOSOME, NUCLEOSOME_OCCUPANCY)]
-        dna_elements = [(CTCF, EPIGENOMICS_OCCUPANCY)]
+        # dna_elements = [(CTCF, EPIGENOMICS_OCCUPANCY)]
 
         minimum_number_of_overlaps_required_for_sbs = 100
         minimum_number_of_overlaps_required_for_dbs = 100
@@ -1288,10 +1414,21 @@ def main():
                                 figure_case_study)
 
     if strand_bias:
+        # for strand bias - figures are under strand_bias directory
+
+        # # POLE proficient
+        # # cancer_types = ['Lung-AdenoCA', 'Stomach-AdenoCA']  # discreet_mode
+        # cancer_types = ['Lung-AdenoCA', 'Stomach-AdenoCA', 'Panc-AdenoCA', 'Eso-AdenoCA']  # prob_mode_05
+        # sub_figure_type = 'SBS28 POLE+'
+
+        # POLE deficient
+        cancer_types = ['ColoRect-AdenoCA', 'Uterus-AdenoCA', 'ESCC'] # same for discreet_mode and prob_mode_05
+        sub_figure_type = 'SBS28 POLE-'  # for strand bias - figures are under strand_bias directory
+
         strand_bias_output_path = os.path.join(plot_output_path, 'strand_bias')
         # We have to select both strand bias
         strand_biases = [REPLICATIONSTRANDBIAS, TRANSCRIPTIONSTRANDBIAS]
-        significance_level = 0.01
+        significance_level = 0.05
         min_required_number_of_mutations_on_strands = 1000
         min_required_percentage_of_mutations_on_strands = 5
         number_of_required_mutations_for_stacked_bar_plot = 1
@@ -1345,8 +1482,7 @@ def main():
             'SoftTissue-Liposarc': [(PCAWG, 'SoftTissue-Liposarc'), (nonPCAWG, 'Sarcoma')],
             'Thy-AdenoCA': [(PCAWG, 'Thy-AdenoCA')]}
 
-        sub_figure_type = 'SBS28 non-POLE hypermutators'
-
+        # POLE deficient
         # rows_sbs_signatures = [('SBS28', None),
         #                        ('SBS28', 'ColoRect-AdenoCA'),
         #                        ('SBS28', 'Uterus-AdenoCA'),
@@ -1357,17 +1493,22 @@ def main():
         #                                   'SBS28 Uterus-AdenoCA',
         #                                   'SBS28 ESCC']
 
-        rows_sbs_signatures = [('SBS28', None),
-                               ('SBS28', 'Lung-AdenoCA'),
-                               ('SBS28', 'Stomach-AdenoCA')]
-
-        rows_sbs_signatures_on_the_heatmap = ['SBS28\nnon-POLE hypermutators',
-                                            'SBS28 Lung-AdenoCA',
-                                            'SBS28 Stomach-AdenoCA']
+        # rows_sbs_signatures = [('SBS28', None),
+        #                        ('SBS28', 'Lung-AdenoCA'),
+        #                        ('SBS28', 'Stomach-AdenoCA'),
+        #                        ('SBS28', 'Eso-AdenoCA'),
+        #                        ('SBS28', 'Panc-AdenoCA')]
+        #
+        # rows_sbs_signatures_on_the_heatmap = ['SBS28\nnon-POLE hypermutators',
+        #                                     'SBS28 Lung-AdenoCA',
+        #                                     'SBS28 Stomach-AdenoCA',
+        #                                     'SBS28 Eso-AdenoCA',
+        #                                     'SBS28 Panc-AdenoCA']
 
         # Combined PCAWG nonPCAWG Strand Bias
         # Separate bar plot is plotted here for Figure Case Study SBS28
         # bar plot is plotted in COSMIC for each cancer type and COSMIC across all cancer types
+        # in this function: plot_six_mutations_sbs_signatures_bar_plot_circles_across_all_tissues_and_tissue_based_together
         plot_strand_bias_figures(combined_output_path,
                                  cancer_types,
                                  sbs_signatures,
@@ -1386,16 +1527,38 @@ def main():
                                  number_of_required_mutations_for_stacked_bar_plot,
                                  cosmic_release_version,
                                  figure_file_extension,
+                                 round_mode = False,
+                                 discreet_mode = False,
+                                 inflate_mutations_to_remove_TC_NER_effect = False,
+                                 consider_only_significant_results = False,
+                                 consider_also_DBS_ID_signatures = True,
+                                 fold_enrichment = ODDS_RATIO,
                                  figure_case_study = sub_figure_type)
 
-        figure_case_study_strand_bias(combined_output_path,
-                                  plot_output_path,
-                                  cancer_types,
-                                  rows_sbs_signatures = rows_sbs_signatures,
-                                  rows_sbs_signatures_on_the_heatmap = rows_sbs_signatures_on_the_heatmap)
+        # figure_case_study_strand_bias(combined_output_path,
+        #                           plot_output_path,
+        #                           cancer_types,
+        #                           rows_sbs_signatures = rows_sbs_signatures,
+        #                           rows_sbs_signatures_on_the_heatmap = rows_sbs_signatures_on_the_heatmap)
 
 
     if replication_time:
+
+        # output figures are under figures_cosmic directory
+
+        # POLE+
+        # POLE proficient samples
+        # non-POLE hypermutators
+        # cancer_types = ['Lung-AdenoCA', 'Stomach-AdenoCA']  # discreet_mode
+        # cancer_types = ['Lung-AdenoCA', 'Stomach-AdenoCA', 'Panc-AdenoCA', 'Eso-AdenoCA']  # prob_mode_05
+        # sub_figure_type = 'POLE+'
+
+        # POLE-
+        # POLE deficient samples
+        # POLE hypermutators
+        cancer_types = ['ColoRect-AdenoCA', 'Uterus-AdenoCA', 'ESCC'] # same for discreet_mode and prob_mode_05
+        sub_figure_type = 'POLE-'
+
         number_of_mutations_required_list = [AT_LEAST_1K_CONSRAINTS]
         cosmic_legend = False
         cosmic_signature = True
@@ -1445,7 +1608,8 @@ def main():
                                        sub_figure_type)
 
     if strand_coordinated_mutagenesis:
-
+        # output figure is under processivity
+        # cancer types are defined in figure_case_study_strand_coordinated_mutagenesis
         figure_case_study_strand_coordinated_mutagenesis(plot_output_path,
                                                          combined_output_path,
                                                          figure_types,

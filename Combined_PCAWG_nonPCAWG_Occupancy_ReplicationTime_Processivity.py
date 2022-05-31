@@ -1,20 +1,8 @@
-#############################################################
-# April 21, 2020
-# This code generates pdfs for Combined PCAWG and nonPCAWG across all tissues
-# Copy this python file on tsccf
-# recommended place  /home/burcak/developer/python/SigProfilerTopographyAuxiliary/combined_pcawg_and_nonpcawg_figures_pdfs
-#
-# import Combined_PCAWG_nonPCWG_Nucleosome_ReplicationTime_Processivity as combined
-# combined.main()
-#
-# Where will be the outputs?
-# Output will be under
-# /oasis/tscc/scratch/burcak/developer/python/SigProfilerTopographyAuxiliary/combined_pcawg_nonpcawg/
-# e.g.: For processivity
-# /oasis/tscc/scratch/burcak/developer/python/SigProfilerTopographyAuxiliary/combined_pcawg_nonpcawg/processivity
+# !/usr/bin/env python3
 
-# Replication time takes circa 30 minutes
-#############################################################
+# Author: burcakotlu
+
+# Contact: burcakotlu@eng.ucsd.edu
 
 import os
 import sys
@@ -66,6 +54,7 @@ from Combined_Common import get_signature2cancer_type_list_dict
 from Combined_Common import depleted
 from Combined_Common import enriched
 from Combined_Common import OCCUPANCY_HEATMAP_COMMON_MULTIPLIER
+from Combined_Common import NUMBER_OF_DECIMAL_PLACES_TO_ROUND
 
 from Combined_Common import TABLE_SBS_SIGNATURE_CUTOFF_NUMBEROFMUTATIONS_AVERAGEPROBABILITY_FILE
 from Combined_Common import TABLE_DBS_SIGNATURE_CUTOFF_NUMBEROFMUTATIONS_AVERAGEPROBABILITY_FILE
@@ -144,8 +133,8 @@ AT_LEAST_20K_CONSRAINTS = 20000
 CANCER_TYPE_BASED_OCCUPANCY_FIGURE = "occupancy"
 ACROSS_ALL_CANCER_TYPES_OCCUPANCY_FIGURE = "across_all_cancer_types_occupancy"
 
-PDFS='pdfs'
-OCCUPANCY_PDF='across_all_tissues_and_each_tissue.pdf'
+PDFS = 'pdfs'
+OCCUPANCY_PDF = 'across_all_tissues_and_each_tissue.pdf'
 ACROSS_ALL_CANCER_TYPES = 'ACROSS_ALL_CANCER_TYPES'
 
 ONE_POINT_EIGHT = 1.08
@@ -185,7 +174,6 @@ def readAsFloatNumpyArray(filePath,plusorMinus):
     else:
         return None
 
-
 def readAsIntNumpyArray(filePath,plusorMinus):
     if os.path.exists(filePath):
         nparray = np.loadtxt(filePath, dtype=float, delimiter='\t')
@@ -195,17 +183,6 @@ def readAsIntNumpyArray(filePath,plusorMinus):
         return nparray
     else:
         return None
-
-
-def compute_average_occupancy_array(signal_array, count_array, plus_minus):
-    average_signal_array =  np.zeros(plus_minus * 2 + 1)
-
-    np.seterr(divide='ignore', invalid='ignore')
-    if (np.any(count_array)):
-        average_signal_array = signal_array/count_array
-    np.seterr(divide='raise', invalid='ignore')
-
-    return average_signal_array
 
 # List contains 2D array for each DNA element file (called from cancer type based)
 # List contains 2D array for each cancer type and DNA element file (called from across all cancer types)
@@ -453,15 +430,15 @@ def plot_occupancy_figure_across_all_cancer_types(plot_output_dir,
             else:
                 plt.title("All %d Cancer Type" %(num_of_cancer_types_with_considered_files), fontsize=cosmic_fontsize_text)
         elif figure_case_study:
+            # Title can be changed here
             plt.title(figure_case_study, fontsize = cosmic_fontsize_text)
         else:
             plt.text(0.99, 0.96, number_of_cancer_types_text, verticalalignment='top', horizontalalignment='right', transform=ax.transAxes,fontsize=fontsize_text, zorder=15)
         if cosmic_correlation_text:
             plt.text(0.99, 0.90, text, verticalalignment='top', horizontalalignment='right', transform=ax.transAxes,fontsize=fontsize_text, zorder=15)
-    elif figure_type == MANUSCRIPT:
-        pass
-        # text= str(num_of_cancer_types_with_pearson_q_values_le_significance_level) + '/' +str(num_of_cancer_types_with_considered_files)
-        # plt.text(0.99, 0.96, text, verticalalignment='top', horizontalalignment='right', transform=ax.transAxes,fontsize=fontsize_text, zorder=15)
+    elif (figure_type == MANUSCRIPT) and (dna_element != CTCF):
+        text = str(num_of_cancer_types_with_pearson_q_values_le_significance_level) + '/' +str(num_of_cancer_types_with_considered_files)
+        plt.text(0.99, 0.96, text, verticalalignment='top', horizontalalignment='right', transform=ax.transAxes,fontsize=fontsize_text, zorder=15)
 
     # Put vertical line at x=0
     plt.axvline(x=0, color='gray', linestyle='--')
@@ -633,11 +610,13 @@ def plot_occupancy_figure_cosmic_tissue_based(plot_output_dir,
     if (simulations_highs_list is not None and simulations_highs_list):
         max_list.append(np.nanmax(simulations_highs_list))
 
+    # Plot simulations
     if (simulations_mean_average_signal_array is not None):
         sims_label = 'Simulated %s' % (label)
         simulations = plt.plot(x, simulations_mean_average_signal_array, color='gray', linestyle='--',  label=sims_label, linewidth=cosmic_linewidth_plot) # new way
         listofLegends.append(simulations[0])
 
+    # Plot simulations lows and highs
     if (simulations_lows_list is not None) and (simulations_highs_list is not None):
         plt.fill_between(x, np.array(simulations_lows_list), np.array(simulations_highs_list), facecolor=fillcolor) # new way 2nd way
 
@@ -659,7 +638,8 @@ def plot_occupancy_figure_cosmic_tissue_based(plot_output_dir,
         plt.ylabel(ylabel_text, fontsize=cosmic_fontsize_labels, labelpad=15)
 
     if (signature == AGGREGATEDSUBSTITUTIONS):
-        plt.text(0.01, 0.96, 'Substitutions', verticalalignment='top', horizontalalignment='left', transform=ax.transAxes,fontsize=cosmic_fontsize_text, zorder=15)
+        if figure_case_study != 'B-cell malignancies':
+            plt.text(0.01, 0.96, 'Substitutions', verticalalignment='top', horizontalalignment='left', transform=ax.transAxes,fontsize=cosmic_fontsize_text, zorder=15)
     elif (signature == AGGREGATEDDINUCS):
         plt.text(0.01, 0.96, 'Dinucs', verticalalignment='top', horizontalalignment='left', transform=ax.transAxes,fontsize=cosmic_fontsize_text,zorder=15)
     elif (signature == AGGREGATEDINDELS):
@@ -671,7 +651,14 @@ def plot_occupancy_figure_cosmic_tissue_based(plot_output_dir,
         plt.text(0.99, 0.96, cancer_type, verticalalignment='top', horizontalalignment='right', transform=ax.transAxes,fontsize=cosmic_fontsize_text, zorder=15)
     else:
         # For Figure Case Study
-        plt.title(cancer_type, fontsize=cosmic_fontsize_text)
+        if figure_case_study == 'B-cell malignancies' and cancer_type == 'B_cell_malignancy_kataegis':
+            plt.title('Kataegis Mutations', fontsize=cosmic_fontsize_text)
+        elif figure_case_study == 'B-cell malignancies' and cancer_type == 'B_cell_malignancy_omikli':
+            plt.title('Omikli Mutations', fontsize=cosmic_fontsize_text)
+        elif figure_case_study == 'B-cell malignancies' and cancer_type == 'B_cell_malignancy_nonClustered':
+            plt.title('Non-clustered Mutations', fontsize=cosmic_fontsize_text)
+        else:
+            plt.title(cancer_type, fontsize=cosmic_fontsize_text)
 
     # Put vertical line at x=0
     plt.axvline(x=0, color='gray', linestyle='--')
@@ -703,14 +690,28 @@ def plot_occupancy_figure_cosmic_tissue_based(plot_output_dir,
 
     if occupancy_type == NUCLEOSOME_OCCUPANCY:
         ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-        ymin = round(min_average_nucleosome_signal - 0.1,2)
-        ymax = round(max_average_nucleosome_signal + 0.1,2)
 
-        # To show less y axis tick labels
-        plt.yticks(np.arange(ymin, ymax, step=0.2), fontsize=cosmic_fontsize_ticks)
-        plt.ylim((ymin - 0.01, ymax + 0.01))
+        if figure_case_study == 'B-cell malignancies':
+            # To make ymin and ymax same for kataegis, omikli and non-clustered mutations
+            ymin = 0.80 # 0.75
+            ymax = 1.00
+            plt.ylim((ymin - 0.02, ymax + 0.02))
+            plt.yticks(np.arange(ymin, ymax, step=0.1), fontsize=cosmic_fontsize_ticks)
+        else:
+            ymin = round(min_average_nucleosome_signal - 0.1, 2)
+            ymax = round(max_average_nucleosome_signal + 0.1, 2)
+            # To show less y axis tick labels
+            plt.yticks(np.arange(ymin, ymax, step=0.2), fontsize=cosmic_fontsize_ticks)
+            plt.ylim((ymin - 0.01, ymax + 0.01))
 
     elif occupancy_type == EPIGENOMICS_OCCUPANCY and dna_element == CTCF:
+        if figure_case_study == 'B-cell malignancies':
+            # To make ymin and ymax same for kataegis, omikli and non-clustered mutations
+            ymin = 100 # 0.75
+            ymax = 180
+            plt.ylim((ymin - 20, ymax + 20))
+            plt.yticks(np.arange(ymin, ymax, step=40), fontsize=cosmic_fontsize_ticks)
+
         ax.yaxis.set_major_formatter(FormatStrFormatter('%4d'))
         # nbins: Maximum number of intervals; one less than max number of ticks.
         ax.yaxis.set_major_locator(MaxNLocator(integer=True, min_n_ticks=3, nbins=2))
@@ -736,7 +737,11 @@ def plot_occupancy_figure_cosmic_tissue_based(plot_output_dir,
     else:
         feature_name = dna_element + '_' + COSMIC_OCCUPANCY
 
-    NCI_Thesaurus_code = cancer_type_2_NCI_Thesaurus_code_dict[cancer_type]
+    try:
+        NCI_Thesaurus_code = cancer_type_2_NCI_Thesaurus_code_dict[cancer_type]
+    except:
+        print('There is no NCI Thesauruscode for' + cancer_type)
+        NCI_Thesaurus_code = cancer_type
 
     filename = '%s_%s_%s_TA_%s.%s' %(cosmic_release_version, signature, feature_name, NCI_Thesaurus_code, figure_file_extension)
     figure_file = os.path.join(plot_output_dir, OCCUPANCY, dna_element, COSMIC_TISSUE_BASED_FIGURES, filename)
@@ -747,7 +752,8 @@ def plot_occupancy_figure_cosmic_tissue_based(plot_output_dir,
     return simulations_mean_average_signal_array
 
 
-# Manuscript cancer type based for each ENCODE file
+# Plot occupancy for each DNA element
+# Manuscript cancer type based
 # Plot cancer type based occupancy with correlation and similarity metrics
 # with number of overlaps
 # with whether this file is considered or not
@@ -813,7 +819,7 @@ def plot_occupancy_figure_manucript_tissue_based_ENCODE_file_based(plot_output_d
 
         # Read the simulation files w.r.t. the current folder
         if occupancy_type == NUCLEOSOME_OCCUPANCY:
-            if ((signature==AGGREGATEDSUBSTITUTIONS) or (signature==AGGREGATEDINDELS) or (signature==AGGREGATEDDINUCS)):
+            if ((signature == AGGREGATEDSUBSTITUTIONS) or (signature == AGGREGATEDINDELS) or (signature == AGGREGATEDDINUCS)):
                 main_path = os.path.join(combined_output_dir, cancer_type, DATA, occupancy_type, signature)
                 if os.path.exists(main_path):
                     files_list = os.listdir(main_path)
@@ -831,10 +837,14 @@ def plot_occupancy_figure_manucript_tissue_based_ENCODE_file_based(plot_output_d
         elif occupancy_type == EPIGENOMICS_OCCUPANCY:
             # Get the list of sim files for the dna_element
             file_of_interest = os.path.basename(average_signal_array_file_path)
+            if cancer_type in file_of_interest:
+                cancer_type_start_index = file_of_interest.find(cancer_type)
+                cancer_type_end_index = cancer_type_start_index + len(cancer_type)
+                file_of_interest = file_of_interest[cancer_type_end_index:]
             first_pos = file_of_interest.find('_')
             second_pos = file_of_interest.find('_', first_pos + 1)
             file_accession = None
-            if first_pos > 0 and second_pos > 0:
+            if first_pos >= 0 and second_pos >= 0:
                 file_accession = file_of_interest[first_pos + 1: second_pos]
 
             if ((signature == AGGREGATEDSUBSTITUTIONS) or (signature == AGGREGATEDINDELS) or (signature == AGGREGATEDDINUCS)):
@@ -843,9 +853,19 @@ def plot_occupancy_figure_manucript_tissue_based_ENCODE_file_based(plot_output_d
                 if os.path.exists(main_path):
                     files_list = os.listdir(main_path)
                     cancer_type_sim = "%s_sim" % (cancer_type)
+
                     if file_accession:
-                        sim_average_signal_array_files = [os.path.join(main_path, file) for file in files_list if (file.startswith(cancer_type_sim)) and (file_accession in file) and (file.endswith(AVERAGE_SIGNAL_ARRAY_TXT))]
-                        sim_count_array_files = [os.path.join(main_path, file) for file in files_list if (file.startswith(cancer_type_sim)) and (file_accession in file) and (file.endswith(ACCUMULATED_COUNT_ARRAY_TXT))]
+                        sim_average_signal_array_files = [os.path.join(main_path, file) for file in files_list if
+                                                          (file.startswith(cancer_type_sim)) and
+                                                          (file_accession in file) and
+                                                          (dna_element.upper() in file.upper()) and
+                                                          (file.endswith(AVERAGE_SIGNAL_ARRAY_TXT))]
+                        sim_count_array_files = [os.path.join(main_path, file) for file in files_list if
+                                                 (file.startswith(cancer_type_sim)) and
+                                                 (file_accession in file) and
+                                                 (dna_element.upper() in file.upper()) and
+                                                 (file.endswith(ACCUMULATED_COUNT_ARRAY_TXT))]
+
 
             else:
                 # SBS6_simXX_ENCFF690BYG_liver_Normal_CTCF-human_AverageSignalArray.txt
@@ -855,8 +875,17 @@ def plot_occupancy_figure_manucript_tissue_based_ENCODE_file_based(plot_output_d
                     signature_sim = "%s_sim" % (signature)
                     # os.path.basename(average_signal_array_file_path) --> SBS17b_ENCFF156VNT_body-of-pancreas_Normal_CTCF-human_AverageSignalArray.txt
                     if file_accession:
-                        sim_average_signal_array_files = [os.path.join(main_path, file) for file in files_list if (file.startswith(signature_sim)) and (file_accession in file) and (file.endswith(AVERAGE_SIGNAL_ARRAY_TXT))]
-                        sim_count_array_files = [os.path.join(main_path, file) for file in files_list if (file.startswith(signature_sim)) and (file_accession in file) and (file.endswith(ACCUMULATED_COUNT_ARRAY_TXT))]
+                        sim_average_signal_array_files = [os.path.join(main_path, file) for file in files_list if
+                                                          (file.startswith(signature_sim)) and
+                                                          (file_accession in file) and
+                                                          (dna_element.upper() in file.upper()) and
+                                                          (file.endswith(AVERAGE_SIGNAL_ARRAY_TXT))]
+                        sim_count_array_files = [os.path.join(main_path, file) for file in files_list if
+                                                 (file.startswith(signature_sim)) and
+                                                 (file_accession in file) and
+                                                 (dna_element.upper() in file.upper()) and
+                                                 (file.endswith(ACCUMULATED_COUNT_ARRAY_TXT))]
+
 
         sim_average_signal_array_files = sorted(sim_average_signal_array_files, key=natural_key)
         sim_count_array_files = sorted(sim_count_array_files, key=natural_key)
@@ -866,13 +895,14 @@ def plot_occupancy_figure_manucript_tissue_based_ENCODE_file_based(plot_output_d
             if (sim_average_signal_array is not None):
                 simulations_average_signal_array_list.append(sim_average_signal_array)
 
+        simulations_average_signal_array = np.vstack(simulations_average_signal_array_list)
+
         # To consider simulations average count
         for sim_count_array_file  in sim_count_array_files:
             sim_count_array = readAsFloatNumpyArray(sim_count_array_file, plusorMinus)
             if (sim_count_array is not None):
                 simulations_count_array_list.append(sim_count_array)
 
-        # Accumulate, DEC 26, 2019
         # Check whether somatic mutations and DNA element have enough overlap
         if signature_cancer_type_occupancy_count_array is not None:
             # If there is nan in the list np.mean returns nan.
@@ -902,7 +932,6 @@ def plot_occupancy_figure_manucript_tissue_based_ENCODE_file_based(plot_output_d
                            enriched_fold_change,
                            minimum_number_of_overlaps_required):
 
-                simulations_average_signal_array = np.vstack(simulations_average_signal_array_list)
                 across_all_cancer_types_simulations_average_signal_array_list.append(simulations_average_signal_array)
                 across_all_files_simulations_average_signal_array_list.append(simulations_average_signal_array)
                 FILE_CONSIDERED = True
@@ -1030,13 +1059,10 @@ def plot_occupancy_figure_manucript_tissue_based_ENCODE_file_based(plot_output_d
         simulations_mean_average_signal_array = np.nanmean(simulations_average_signal_array, axis=0) # column-wise mean
 
     if (simulations_mean_average_signal_array is not None) and np.any(simulations_mean_average_signal_array):
-        return simulations_mean_average_signal_array.tolist()
+        return simulations_mean_average_signal_array
     else:
         return None
 
-
-
-# April 24, 2020
 def accumulateReplicationTimeAcrossAllTissues_plot_figure_for_all_types(plot_output_dir,
                                                                         combined_output_dir,
                                                                         signature_tuples,
@@ -1059,12 +1085,12 @@ def accumulateReplicationTimeAcrossAllTissues_plot_figure_for_all_types(plot_out
                                                                         cosmic_fontsize_labels,
                                                                         sub_figure_type):
 
-    signature_cancer_type_replication_time_df_list=[]
+    signature_cancer_type_replication_time_df_list = []
 
     def append_df(signature_cancer_type_df):
         signature_cancer_type_replication_time_df_list.append(signature_cancer_type_df)
 
-    # Parallel version for real runs
+    # Parallel version for real runs starts
     numofProcesses = multiprocessing.cpu_count()
     pool = multiprocessing.Pool(numofProcesses)
 
@@ -1096,10 +1122,12 @@ def accumulateReplicationTimeAcrossAllTissues_plot_figure_for_all_types(plot_out
 
     pool.close()
     pool.join()
+    # Parallel version for real runs ends
 
     # # Sequentilal version for debugging starts
     # for (signature, signature_type) in signature_tuples:
-    #     signature_cancer_type_replication_time_df = accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_dir,
+    #     signature_cancer_type_replication_time_df = accumulate_replication_time_across_all_cancer_types_plot_figure(
+    #                            plot_output_dir,
     #                            combined_output_dir,
     #                            signature,
     #                            signature_type,
@@ -1128,7 +1156,6 @@ def accumulateReplicationTimeAcrossAllTissues_plot_figure_for_all_types(plot_out
     return all_signatures_replication_time_df
 
 
-# April 24, 2020 starts
 # Plot figures in parallel
 def accumulateOccupancyAcrossAllCancerTypes_plot_figure_for_signatures(plot_output_dir,
                                                                        combined_output_dir,
@@ -1172,7 +1199,7 @@ def accumulateOccupancyAcrossAllCancerTypes_plot_figure_for_signatures(plot_outp
     def append_df(signature_cancer_type_file_name_occupancy_df):
         df_list.append(signature_cancer_type_file_name_occupancy_df)
 
-    # Parallel version for real runs
+    # Parallel version for real runs starts
     numofProcesses = multiprocessing.cpu_count()
     pool = multiprocessing.Pool(numofProcesses)
 
@@ -1215,42 +1242,44 @@ def accumulateOccupancyAcrossAllCancerTypes_plot_figure_for_signatures(plot_outp
 
     pool.close()
     pool.join()
+    # Parallel version for real runs ends
 
     # # Sequential version for testing/debugging starts
     # for (signature, signature_type) in signature_tuples:
-    #     signature_cancer_type_file_name_occupancy_df = accumulateOccupancyAcrossAllCancerTypes_plot_figure_for_signature(plot_output_dir,
-    #                            combined_output_dir,
-    #                            occupancy_type,
-    #                            dna_element,
-    #                            signature,
-    #                            signature_type,
-    #                            cancer_types,
-    #                            numberofSimulations,
-    #                            plusorMinus,
-    #                            start,
-    #                            end,
-    #                            consider_both_real_and_sim_avg_overlap,
-    #                            minimum_number_of_overlaps_required_for_sbs,
-    #                            minimum_number_of_overlaps_required_for_dbs,
-    #                            minimum_number_of_overlaps_required_for_indels,
-    #                            figure_type,
-    #                            number_of_mutations_required,
-    #                            cosmic_release_version,
-    #                            figure_file_extension,
-    #                            depleted_fold_change,
-    #                            enriched_fold_change,
-    #                            occupancy_significance_level,
-    #                            pearson_spearman_correlation_cutoff,
-    #                            cosmic_legend,
-    #                            cosmic_correlation_text,
-    #                            cosmic_labels,
-    #                            cancer_type_on_right_hand_side,
-    #                            cosmic_fontsize_text,
-    #                            cosmic_fontsize_ticks,
-    #                            cosmic_fontsize_labels,
-    #                            cosmic_linewidth_plot,
-    #                            cosmic_title_all_cancer_types,
-    #                            figure_case_study)
+    #     signature_cancer_type_file_name_occupancy_df = accumulateOccupancyAcrossAllCancerTypes_plot_figure_for_signature(
+    #                             plot_output_dir,
+    #                             combined_output_dir,
+    #                             occupancy_type,
+    #                             dna_element,
+    #                             signature,
+    #                             signature_type,
+    #                             cancer_types,
+    #                             numberofSimulations,
+    #                             plusorMinus,
+    #                             start,
+    #                             end,
+    #                             consider_both_real_and_sim_avg_overlap,
+    #                             minimum_number_of_overlaps_required_for_sbs,
+    #                             minimum_number_of_overlaps_required_for_dbs,
+    #                             minimum_number_of_overlaps_required_for_indels,
+    #                             figure_type,
+    #                             number_of_mutations_required,
+    #                             cosmic_release_version,
+    #                             figure_file_extension,
+    #                             depleted_fold_change,
+    #                             enriched_fold_change,
+    #                             occupancy_significance_level,
+    #                             pearson_spearman_correlation_cutoff,
+    #                             cosmic_legend,
+    #                             cosmic_correlation_text,
+    #                             cosmic_labels,
+    #                             cancer_type_on_right_hand_side,
+    #                             cosmic_fontsize_text,
+    #                             cosmic_fontsize_ticks,
+    #                             cosmic_fontsize_labels,
+    #                             cosmic_linewidth_plot,
+    #                             cosmic_title_all_cancer_types,
+    #                             figure_case_study)
     #     append_df(signature_cancer_type_file_name_occupancy_df)
     # # Sequential version for testing/debugging ends
 
@@ -1259,7 +1288,15 @@ def accumulateOccupancyAcrossAllCancerTypes_plot_figure_for_signatures(plot_outp
     return accumulated_signature_cancer_type_file_name_occupancy_df
 
 
-def compute_sim_data_avg_signal_and_count_given_average_signal_array_file_path(combined_output_dir, cancer_type, signature, occupancy_type, average_signal_array_file_path, plusorMinus, start, end):
+def compute_sim_data_avg_signal_and_count_given_average_signal_array_file_path(combined_output_dir,
+                                                                               cancer_type,
+                                                                               signature,
+                                                                               dna_element,
+                                                                               occupancy_type,
+                                                                               average_signal_array_file_path,
+                                                                               plusorMinus,
+                                                                               start,
+                                                                               end):
     simulations_count_array_list = []
     simulations_avg_signal_array_list = []
 
@@ -1283,13 +1320,19 @@ def compute_sim_data_avg_signal_and_count_given_average_signal_array_file_path(c
 
     elif occupancy_type == EPIGENOMICS_OCCUPANCY:
         # Get the list of sim files for the dna_element
+        # SBS85_ENCFF900JSN_B-cell_Normal_H3K4me2-human_AverageSignalArray.txt
+        # B_cell_malignancy_kataegis_ENCFF755GYS_B-cell_Normal_H3K27me3-human_AccumulatedSignalArray.txt
+        # Liver-HCC_simXX_ENCFF665OBP_right-lobe-of-liver_Normal_CTCF-human_AverageSignalArray.txt
         file_of_interest = os.path.basename(average_signal_array_file_path)
+        if cancer_type in file_of_interest:
+            cancer_type_start_index = file_of_interest.find(cancer_type)
+            cancer_type_end_index = cancer_type_start_index + len(cancer_type)
+            file_of_interest = file_of_interest[cancer_type_end_index:]
         first_pos = file_of_interest.find('_')
         second_pos = file_of_interest.find('_', first_pos + 1)
         file_accession = None
-        if first_pos > 0 and second_pos > 0:
+        if first_pos >= 0 and second_pos >= 0:
             file_accession = file_of_interest[first_pos + 1: second_pos]
-
         if ((signature == AGGREGATEDSUBSTITUTIONS) or (signature == AGGREGATEDINDELS) or (signature == AGGREGATEDDINUCS)):
             # Liver-HCC_simXX_ENCFF665OBP_right-lobe-of-liver_Normal_CTCF-human_AverageSignalArray.txt
             main_path = os.path.join(combined_output_dir, cancer_type, DATA, occupancy_type, signature)
@@ -1297,8 +1340,8 @@ def compute_sim_data_avg_signal_and_count_given_average_signal_array_file_path(c
                 files_list = os.listdir(main_path)
                 cancer_type_sim = "%s_sim" % (cancer_type)
                 if file_accession:
-                    sim_count_array_files = [os.path.join(main_path, file) for file in files_list if (file.startswith(cancer_type_sim)) and (file_accession in file) and (file.endswith(ACCUMULATED_COUNT_ARRAY_TXT))]
-                    sim_avg_signal_array_files = [os.path.join(main_path, file) for file in files_list if (file.startswith(cancer_type_sim)) and (file_accession in file) and (file.endswith(AVERAGE_SIGNAL_ARRAY_TXT))]
+                    sim_count_array_files = [os.path.join(main_path, file) for file in files_list if (file.startswith(cancer_type_sim)) and (file_accession in file) and (dna_element.upper() in file.upper()) and (file.endswith(ACCUMULATED_COUNT_ARRAY_TXT))]
+                    sim_avg_signal_array_files = [os.path.join(main_path, file) for file in files_list if (file.startswith(cancer_type_sim)) and (file_accession in file) and (dna_element.upper() in file.upper()) and (file.endswith(AVERAGE_SIGNAL_ARRAY_TXT))]
 
         else:
             # SBS6_simXX_ENCFF690BYG_liver_Normal_CTCF-human_AverageSignalArray.txt
@@ -1308,8 +1351,8 @@ def compute_sim_data_avg_signal_and_count_given_average_signal_array_file_path(c
                 signature_sim = "%s_sim" % (signature)
                 # os.path.basename(average_signal_array_file_path) --> SBS17b_ENCFF156VNT_body-of-pancreas_Normal_CTCF-human_AverageSignalArray.txt
                 if file_accession:
-                    sim_count_array_files = [os.path.join(main_path, file) for file in files_list if (file.startswith(signature_sim)) and (file_accession in file) and (file.endswith(ACCUMULATED_COUNT_ARRAY_TXT))]
-                    sim_avg_signal_array_files = [os.path.join(main_path, file) for file in files_list if (file.startswith(signature_sim)) and (file_accession in file) and (file.endswith(AVERAGE_SIGNAL_ARRAY_TXT))]
+                    sim_count_array_files = [os.path.join(main_path, file) for file in files_list if (file.startswith(signature_sim)) and (file_accession in file) and (dna_element.upper() in file.upper()) and (file.endswith(ACCUMULATED_COUNT_ARRAY_TXT))]
+                    sim_avg_signal_array_files = [os.path.join(main_path, file) for file in files_list if (file.startswith(signature_sim)) and (file_accession in file) and (dna_element.upper() in file.upper()) and (file.endswith(AVERAGE_SIGNAL_ARRAY_TXT))]
 
     sim_count_array_files = sorted(sim_count_array_files, key=natural_key)
     sim_avg_signal_array_files = sorted(sim_avg_signal_array_files, key=natural_key)
@@ -1531,6 +1574,7 @@ def accumulateOccupancyAcrossAllCancerTypes_plot_figure_for_signature(plot_outpu
         if number_of_mutations >= number_of_mutations_required:
             accumulated_signal_array_files = []
             accumulated_count_array_files = []
+            accumulated_average_signal_array_files = []
 
             # There is only one Nucleosome Occupancy File
             if occupancy_type == NUCLEOSOME_OCCUPANCY:
@@ -1596,9 +1640,9 @@ def accumulateOccupancyAcrossAllCancerTypes_plot_figure_for_signature(plot_outpu
                         files_list = os.listdir(main_path)
                         cancer_type_ = "%s_" %(cancer_type)
                         cancer_type_sim= "%s_sim" %(cancer_type)
-                        accumulated_average_signal_array_files = [os.path.join(main_path,file) for file in files_list if ((file.startswith(cancer_type_)) and (not file.startswith(cancer_type_sim)) and (dna_element in file) and (file.endswith(AVERAGE_SIGNAL_ARRAY_TXT)))]
-                        accumulated_signal_array_files = [os.path.join(main_path,file) for file in files_list if ((file.startswith(cancer_type_)) and (not file.startswith(cancer_type_sim)) and (dna_element in file) and (file.endswith(ACCUMULATED_SIGNAL_ARRAY_TXT)))]
-                        accumulated_count_array_files = [os.path.join(main_path,file) for file in files_list if ((file.startswith(cancer_type_)) and (not file.startswith(cancer_type_sim)) and (dna_element in file) and (file.endswith(ACCUMULATED_COUNT_ARRAY_TXT)))]
+                        accumulated_average_signal_array_files = [os.path.join(main_path,file) for file in files_list if ((file.startswith(cancer_type_)) and (not file.startswith(cancer_type_sim)) and (dna_element.upper() in file.upper()) and (file.endswith(AVERAGE_SIGNAL_ARRAY_TXT)))]
+                        accumulated_signal_array_files = [os.path.join(main_path,file) for file in files_list if ((file.startswith(cancer_type_)) and (not file.startswith(cancer_type_sim)) and (dna_element.upper() in file.upper()) and (file.endswith(ACCUMULATED_SIGNAL_ARRAY_TXT)))]
+                        accumulated_count_array_files = [os.path.join(main_path,file) for file in files_list if ((file.startswith(cancer_type_)) and (not file.startswith(cancer_type_sim)) and (dna_element.upper() in file.upper()) and (file.endswith(ACCUMULATED_COUNT_ARRAY_TXT)))]
                 else:
                     # SBS6_ENCFF690BYG_liver_Normal_CTCF-human_AccumulatedCountArray.txt
                     main_path = os.path.join(combined_output_dir,cancer_type, DATA,occupancy_type,SIGNATUREBASED)
@@ -1606,16 +1650,15 @@ def accumulateOccupancyAcrossAllCancerTypes_plot_figure_for_signature(plot_outpu
                         files_list = os.listdir(main_path)
                         signature_ = "%s_" %(signature)
                         signature_sim = "%s_sim" %(signature)
-                        accumulated_average_signal_array_files = [os.path.join(main_path,file) for file in files_list if ((file.startswith(signature_)) and (not file.startswith(signature_sim)) and (dna_element in file) and (file.endswith(AVERAGE_SIGNAL_ARRAY_TXT)))]
-                        accumulated_signal_array_files = [os.path.join(main_path,file) for file in files_list if ((file.startswith(signature_)) and (not file.startswith(signature_sim)) and (dna_element in file) and (file.endswith(ACCUMULATED_SIGNAL_ARRAY_TXT)))]
-                        accumulated_count_array_files = [os.path.join(main_path,file) for file in files_list if ((file.startswith(signature_)) and (not file.startswith(signature_sim)) and (dna_element in file) and (file.endswith(ACCUMULATED_COUNT_ARRAY_TXT)))]
+                        accumulated_average_signal_array_files = [os.path.join(main_path,file) for file in files_list if ((file.startswith(signature_)) and (not file.startswith(signature_sim)) and (dna_element.upper() in file.upper()) and (file.endswith(AVERAGE_SIGNAL_ARRAY_TXT)))]
+                        accumulated_signal_array_files = [os.path.join(main_path,file) for file in files_list if ((file.startswith(signature_)) and (not file.startswith(signature_sim)) and (dna_element.upper() in file.upper()) and (file.endswith(ACCUMULATED_SIGNAL_ARRAY_TXT)))]
+                        accumulated_count_array_files = [os.path.join(main_path,file) for file in files_list if ((file.startswith(signature_)) and (not file.startswith(signature_sim)) and (dna_element.upper() in file.upper()) and (file.endswith(ACCUMULATED_COUNT_ARRAY_TXT)))]
 
             if (len(accumulated_average_signal_array_files) > 0) and (len(accumulated_signal_array_files) > 0) and (len(accumulated_count_array_files) > 0):
                 accumulated_average_signal_array_files = sorted(accumulated_average_signal_array_files, key=natural_key)
                 accumulated_signal_array_files = sorted(accumulated_signal_array_files, key=natural_key)
                 accumulated_count_array_files = sorted(accumulated_count_array_files, key=natural_key)
                 for average_signal_array_file_path, signal_array_file_path, count_array_file_path in zip(accumulated_average_signal_array_files, accumulated_signal_array_files, accumulated_count_array_files):
-
                     if  os.path.exists(average_signal_array_file_path) and os.path.exists(signal_array_file_path) and os.path.exists(count_array_file_path):
                         signature_cancer_type_occupancy_average_signal_array = readAsFloatNumpyArray(average_signal_array_file_path, plusorMinus)
                         signature_cancer_type_occupancy_count_array = readAsIntNumpyArray(count_array_file_path, plusorMinus)
@@ -1627,6 +1670,7 @@ def accumulateOccupancyAcrossAllCancerTypes_plot_figure_for_signature(plot_outpu
                             sim_data_avg_signal, sim_data_avg_count = compute_sim_data_avg_signal_and_count_given_average_signal_array_file_path(combined_output_dir,
                                                                                                                  cancer_type,
                                                                                                                  signature,
+                                                                                                                 dna_element,
                                                                                                                  occupancy_type,
                                                                                                                  average_signal_array_file_path,
                                                                                                                  plusorMinus,
@@ -1701,9 +1745,9 @@ def accumulateOccupancyAcrossAllCancerTypes_plot_figure_for_signature(plot_outpu
             number_of_mutations_filepath = os.path.join(combined_output_dir,cancer_type,DATA,number_of_mutations_filename)
             number_of_mutations_df = pd.read_csv(number_of_mutations_filepath, header=0, sep='\t')
             if np.any(number_of_mutations_df[number_of_mutations_df['signature'] == signature]['number_of_mutations'].values):
-                number_of_mutations = number_of_mutations_df[number_of_mutations_df['signature']==signature]['number_of_mutations'].values[0]
+                number_of_mutations = number_of_mutations_df[number_of_mutations_df['signature'] == signature]['number_of_mutations'].values[0]
             if np.any(number_of_mutations_df[number_of_mutations_df['signature'] == signature]['average_probability'].values):
-                average_probability = number_of_mutations_df[number_of_mutations_df['signature']==signature]['average_probability'].values[0]
+                average_probability = number_of_mutations_df[number_of_mutations_df['signature'] == signature]['average_probability'].values[0]
             if np.any(number_of_mutations_df[number_of_mutations_df['signature'] == signature]['cutoff'].values):
                 cutoff = float(number_of_mutations_df[number_of_mutations_df['signature'] == signature]['cutoff'].values[0])
 
@@ -1714,7 +1758,7 @@ def accumulateOccupancyAcrossAllCancerTypes_plot_figure_for_signature(plot_outpu
             print('Second Pass: %s %s ' %(signature,cancer_type))
 
             if occupancy_type == NUCLEOSOME_OCCUPANCY:
-                if ((signature==AGGREGATEDSUBSTITUTIONS) or (signature==AGGREGATEDINDELS) or (signature==AGGREGATEDDINUCS)):
+                if ((signature == AGGREGATEDSUBSTITUTIONS) or (signature == AGGREGATEDINDELS) or (signature == AGGREGATEDDINUCS)):
                     signature_cancer_type_occupancy_average_signal_array_filename = '%s_%s' % (cancer_type, AVERAGE_SIGNAL_ARRAY_TXT)
                     signature_cancer_type_occupancy_average_signal_array_filepath = os.path.join(combined_output_dir,cancer_type, DATA, occupancy_type,signature,signature_cancer_type_occupancy_average_signal_array_filename)
 
@@ -1735,23 +1779,23 @@ def accumulateOccupancyAcrossAllCancerTypes_plot_figure_for_signature(plot_outpu
                 # Get the list of files for the dna_element
                 if ((signature == AGGREGATEDSUBSTITUTIONS) or (signature == AGGREGATEDINDELS) or (signature == AGGREGATEDDINUCS)):
                     # Liver-HCC_ENCFF665OBP_right-lobe-of-liver_Normal_CTCF-human_AverageSignalArray.txt
-                    main_path = os.path.join(combined_output_dir,cancer_type, DATA,occupancy_type,signature)
+                    main_path = os.path.join(combined_output_dir, cancer_type, DATA, occupancy_type, signature)
                     if os.path.exists(main_path):
                         files_list = os.listdir(main_path)
                         cancer_type_ = "%s_" %(cancer_type)
                         cancer_type_sim= "%s_sim" %(cancer_type)
-                        average_signal_array_files = [os.path.join(main_path,file) for file in files_list if (file.startswith(cancer_type_)) and (not file.startswith(cancer_type_sim)) and (dna_element in file) and (file.endswith(AVERAGE_SIGNAL_ARRAY_TXT))]
-                        accumulated_count_array_files = [os.path.join(main_path,file) for file in files_list if ((file.startswith(cancer_type_)) and (not file.startswith(cancer_type_sim)) and (dna_element in file) and (file.endswith(ACCUMULATED_COUNT_ARRAY_TXT)))]
+                        average_signal_array_files = [os.path.join(main_path,file) for file in files_list if (file.startswith(cancer_type_)) and (not file.startswith(cancer_type_sim)) and (dna_element.upper() in file.upper()) and (file.endswith(AVERAGE_SIGNAL_ARRAY_TXT))]
+                        accumulated_count_array_files = [os.path.join(main_path,file) for file in files_list if ((file.startswith(cancer_type_)) and (not file.startswith(cancer_type_sim)) and (dna_element.upper() in file.upper()) and (file.endswith(ACCUMULATED_COUNT_ARRAY_TXT)))]
 
                 else:
                     # SBS6_ENCFF690BYG_liver_Normal_CTCF-human_AverageSignalArray.txt
-                    main_path = os.path.join(combined_output_dir,cancer_type, DATA,occupancy_type,SIGNATUREBASED)
+                    main_path = os.path.join(combined_output_dir, cancer_type, DATA, occupancy_type, SIGNATUREBASED)
                     if os.path.exists(main_path):
                         files_list = os.listdir(main_path)
                         signature_ = "%s_" %(signature)
                         signature_sim = "%s_sim" %(signature)
-                        average_signal_array_files = [os.path.join(main_path,file) for file in files_list if (file.startswith(signature_)) and (not file.startswith(signature_sim)) and (dna_element in file) and (file.endswith(AVERAGE_SIGNAL_ARRAY_TXT))]
-                        accumulated_count_array_files = [os.path.join(main_path,file) for file in files_list if ((file.startswith(signature_)) and (not file.startswith(signature_sim)) and (dna_element in file) and (file.endswith(ACCUMULATED_COUNT_ARRAY_TXT)))]
+                        average_signal_array_files = [os.path.join(main_path,file) for file in files_list if (file.startswith(signature_)) and (not file.startswith(signature_sim)) and (dna_element.upper() in file.upper()) and (file.endswith(AVERAGE_SIGNAL_ARRAY_TXT))]
+                        accumulated_count_array_files = [os.path.join(main_path,file) for file in files_list if ((file.startswith(signature_)) and (not file.startswith(signature_sim)) and (dna_element.upper() in file.upper()) and (file.endswith(ACCUMULATED_COUNT_ARRAY_TXT)))]
 
             average_signal_array_files = sorted(average_signal_array_files,key=natural_key)
             accumulated_count_array_files = sorted(accumulated_count_array_files,key=natural_key)
@@ -1776,6 +1820,7 @@ def accumulateOccupancyAcrossAllCancerTypes_plot_figure_for_signature(plot_outpu
                             combined_output_dir,
                             cancer_type,
                             signature,
+                            dna_element,
                             occupancy_type,
                             average_signal_array_file_path,
                             plusorMinus,
@@ -1803,16 +1848,8 @@ def accumulateOccupancyAcrossAllCancerTypes_plot_figure_for_signature(plot_outpu
                     spearman_p_value = np.nan
                     pearson_corr = np.nan
                     pearson_p_value = np.nan
+                    is_eligible_flag = False
 
-                    if (not np.any(np.isnan(signature_cancer_type_occupancy_average_signal_array))):
-                        # spearman_corr, spearman_p_value = spearmanr(signature_cancer_type_occupancy_average_signal_array,across_all_cancer_types_average_signal_array)
-                        spearman_corr, spearman_p_value = spearmanr(signature_cancer_type_occupancy_average_signal_array[500:1501],
-                                                                    across_all_cancer_types_average_signal_array[500:1501])
-
-                    if (not np.any(np.isnan(signature_cancer_type_occupancy_average_signal_array))):
-                        # pearson_corr, pearson_p_value = pearsonr(signature_cancer_type_occupancy_average_signal_array,across_all_cancer_types_average_signal_array)
-                        pearson_corr, pearson_p_value = pearsonr(signature_cancer_type_occupancy_average_signal_array[500:1501],
-                                                                 across_all_cancer_types_average_signal_array[500:1501])
 
                     if is_eligible(fold_change,
                                    consider_both_real_and_sim_avg_overlap,
@@ -1821,18 +1858,24 @@ def accumulateOccupancyAcrossAllCancerTypes_plot_figure_for_signature(plot_outpu
                                    depleted_fold_change,
                                    enriched_fold_change,
                                    minimum_number_of_overlaps_required):
+
+                        is_eligible_flag = True
+
+                        if (not np.any(np.isnan(signature_cancer_type_occupancy_average_signal_array))):
+                            # spearman_corr, spearman_p_value = spearmanr(signature_cancer_type_occupancy_average_signal_array,across_all_cancer_types_average_signal_array)
+                            spearman_corr, spearman_p_value = spearmanr(
+                                signature_cancer_type_occupancy_average_signal_array[500:1501],
+                                across_all_cancer_types_average_signal_array[500:1501])
+
+                        if (not np.any(np.isnan(signature_cancer_type_occupancy_average_signal_array))):
+                            # pearson_corr, pearson_p_value = pearsonr(signature_cancer_type_occupancy_average_signal_array,across_all_cancer_types_average_signal_array)
+                            pearson_corr, pearson_p_value = pearsonr(
+                                signature_cancer_type_occupancy_average_signal_array[500:1501],
+                                across_all_cancer_types_average_signal_array[500:1501])
 
                         if (spearman_corr and (spearman_corr >= pearson_spearman_correlation_cutoff)):
                             spearman_p_values.append(spearman_p_value)
                             spearman_element_names.append((signature, main_cancer_type, average_signal_array_file_name)) # cancer_type
-
-                    if is_eligible(fold_change,
-                                   consider_both_real_and_sim_avg_overlap,
-                                   real_data_avg_count,
-                                   sim_data_avg_count,
-                                   depleted_fold_change,
-                                   enriched_fold_change,
-                                   minimum_number_of_overlaps_required):
 
                         if (pearson_corr and (pearson_corr >= pearson_spearman_correlation_cutoff)):
                             pearson_p_values.append(pearson_p_value)
@@ -1841,7 +1884,7 @@ def accumulateOccupancyAcrossAllCancerTypes_plot_figure_for_signature(plot_outpu
                     # Cosine similarity is not trustworthy
                     # cos_sim = cosine_similarity([signaturebased_tissuebased_nucleosomeoccupancy_average_signal_array],[accumulated_average_signal_array])
 
-                    # Manuscript Tissue Based figure for each ENCODE file
+                    # Manuscript tissue Based figure for each ENCODE file
                     # Manucscript Signature - Cancer Type - Occupancy Figure with correlations - for Manuscript pdf files
                     # Where is it plotted?
                     # Under .../SigProfilerTopographyAuxiliary/combined_pcawg_nonpcawg/occupancy/
@@ -1850,7 +1893,7 @@ def accumulateOccupancyAcrossAllCancerTypes_plot_figure_for_signature(plot_outpu
                     # Accumulate simulations if number of overlaps >= minimum number of overlaps needed
                     # Accumulate simulations signal array separately
                     # Accumulate simulations count array separately
-                    simulations_means_list = plot_occupancy_figure_manucript_tissue_based_ENCODE_file_based(plot_output_dir,
+                    simulations_mean_average_signal_array = plot_occupancy_figure_manucript_tissue_based_ENCODE_file_based(plot_output_dir,
                                                                                 combined_output_dir,
                                                                                 occupancy_type,
                                                                                 dna_element,
@@ -1881,26 +1924,29 @@ def accumulateOccupancyAcrossAllCancerTypes_plot_figure_for_signature(plot_outpu
                                                                                 across_all_cancer_types_simulations_average_signal_array_list,
                                                                                 across_all_files_simulations_average_signal_array_list)
 
+
                     signature_cancer_type_file_name_occupancy_df = signature_cancer_type_file_name_occupancy_df.append(
                                                 {"signature": signature,
                                                    "cancer_type": main_cancer_type, # Lymph-BNHL is used either results come from Lymph-BNHL_clustered, Lymph-BNHL_nonClustered or Lymph-BNHL, same for Lymph-CLL
                                                    "file_name": average_signal_array_file_name,
-                                                   "real_average_signal_array" : signature_cancer_type_occupancy_average_signal_array.tolist(),
-                                                   "sims_average_signal_array" : simulations_means_list,
-                                                   "spearman_corr": spearman_corr,
+                                                   "real_average_signal_array" : np.around(signature_cancer_type_occupancy_average_signal_array[500:1501], NUMBER_OF_DECIMAL_PLACES_TO_ROUND).tolist(),
+                                                   "sims_average_signal_array" : np.around(simulations_mean_average_signal_array[500:1501], NUMBER_OF_DECIMAL_PLACES_TO_ROUND).tolist(),
+                                                   "is_eligible" : is_eligible_flag,
+                                                   "spearman_corr": np.around(spearman_corr, NUMBER_OF_DECIMAL_PLACES_TO_ROUND) if spearman_corr is not None else np.nan,
                                                    "spearman_p_value": spearman_p_value,
                                                    "spearman_q_value": np.nan,
-                                                   "pearson_corr": pearson_corr,
+                                                   "pearson_corr": np.around(pearson_corr, NUMBER_OF_DECIMAL_PLACES_TO_ROUND) if pearson_corr is not None else np.nan,
                                                    "pearson_p_value": pearson_p_value,
                                                    "pearson_q_value": np.nan,
                                                    "cutoff": cutoff,
                                                    "number_of_mutations": number_of_mutations,
-                                                   "average_probability": average_probability,
-                                                   "real_average_number_of_overlaps": real_data_avg_count,
-                                                   "sims_average_number_of_overlaps": sim_data_avg_count,
-                                                   "avg_real_signal": avg_real_signal,
-                                                   "sim_data_avg_signal": sim_data_avg_signal,
-                                                   "fold_change": fold_change}, ignore_index=True)
+                                                   "average_probability": np.around(average_probability, NUMBER_OF_DECIMAL_PLACES_TO_ROUND) if average_probability is not None else np.nan,
+                                                   "real_average_number_of_overlaps": np.around(real_data_avg_count, NUMBER_OF_DECIMAL_PLACES_TO_ROUND) if real_data_avg_count is not None else np.nan,
+                                                   "sims_average_number_of_overlaps": np.around(sim_data_avg_count, NUMBER_OF_DECIMAL_PLACES_TO_ROUND) if sim_data_avg_count is not None else np.nan,
+                                                   "avg_real_signal": np.around(avg_real_signal, NUMBER_OF_DECIMAL_PLACES_TO_ROUND) if avg_real_signal is not None else np.nan,
+                                                   "sim_data_avg_signal": np.around(sim_data_avg_signal, NUMBER_OF_DECIMAL_PLACES_TO_ROUND) if sim_data_avg_signal is not None else np.nan,
+                                                   "fold_change": np.around(fold_change, NUMBER_OF_DECIMAL_PLACES_TO_ROUND) if fold_change is not None else np.nan},
+                        ignore_index=True)
 
         # For each cancer type in the Second Pass
         if (across_all_files_average_signal_array.any()):
@@ -1937,11 +1983,11 @@ def accumulateOccupancyAcrossAllCancerTypes_plot_figure_for_signature(plot_outpu
                                                           cosmic_fontsize_labels = cosmic_fontsize_labels,
                                                           cosmic_linewidth_plot = cosmic_linewidth_plot,
                                                           figure_case_study = figure_case_study)
+
             else:
                 print('There is a problem, nan value in across_all_files_average_signal_array', signature, cancer_type, dna_element)
 
     # Signature Based Across All Combined Tissues
-    # Where is it plotted?
     if (across_all_cancer_types_average_signal_array.any()):
         print('\n#################################################################')
         print('Second Pass ended for %s' %(signature))
@@ -2039,12 +2085,14 @@ def accumulateOccupancyAcrossAllCancerTypes_plot_figure_for_signature(plot_outpu
                                                         cosmic_title_all_cancer_types = cosmic_title_all_cancer_types,
                                                         figure_case_study = figure_case_study)
 
+
         signature_cancer_type_file_name_occupancy_df = signature_cancer_type_file_name_occupancy_df.append(
             {"signature": signature,
              "cancer_type": ACROSS_ALL_CANCER_TYPES,
              "file_name": np.nan,
-             "real_average_signal_array": across_all_cancer_types_average_signal_array.tolist(),
-             "sims_average_signal_array": across_all_cancer_types_sims_average_signal_array.tolist(),
+             "real_average_signal_array": np.around(across_all_cancer_types_average_signal_array[500:1501], NUMBER_OF_DECIMAL_PLACES_TO_ROUND).tolist(),
+             "sims_average_signal_array": np.around(across_all_cancer_types_sims_average_signal_array[500:1501], NUMBER_OF_DECIMAL_PLACES_TO_ROUND).tolist(),
+             "is_eligible": np.nan,
              "spearman_corr": np.nan,
              "spearman_p_value": np.nan,
              "spearman_q_value": np.nan,
@@ -2108,7 +2156,7 @@ def fill_occupancy_pdfs(output_dir,
                     files_list = os.listdir(main_path)
                     signature_cancer_type = "%s_%s" %(signature,cancer_type)
                     signature_cancer_type_files = [os.path.join(main_path, file) for file in files_list if
-                                                      (file.startswith(signature_cancer_type)) and (dna_element in file) and ('10K' not in file) and ('5K' not in file)]
+                                                      (file.startswith(signature_cancer_type)) and (dna_element.upper() in file.upper()) and ('10K' not in file) and ('5K' not in file)]
                     interested_file_list.extend(signature_cancer_type_files)
 
         print('Printing PDF for %s' %(signature))
@@ -2267,15 +2315,16 @@ def plot_replication_time_figure(output_dir,
         spine_line_width = 1 #1
         length = 5 #5
         simulations_linewidth = 2 #2
-        dpi=300
+        dpi = 300
+
         # COSMIC Using NorthEast Right SouthDown Arrows
         if cancer_type == None:
             if (signature == 'aggregatedsubstitutions'):
                 title_signature = 'Substitutions:'
             elif (signature == 'aggregateddinucs'):
-                title_signature = 'Dinucs'
+                title_signature = 'Dinucs:'
             elif (signature == 'aggregatedindels'):
-                title_signature = 'Indels'
+                title_signature = 'Indels:'
             else:
                 title_signature = signature
 
@@ -2340,10 +2389,10 @@ def plot_replication_time_figure(output_dir,
         if sub_figure_type:
             if cancer_type:
                 plt.title(cancer_type, fontsize=fontsize, pad=10, loc='center')
-            elif cosmic_signature:
-                plt.title(title_signature + "\n" + sub_figure_type, fontsize=fontsize, pad=10, loc='center') # For Figure Case Study Tobacco Smoking and Chewing
             else:
-                plt.title(sub_figure_type, fontsize=fontsize, pad=10, loc='center') # For Figure Case Study SBS4
+                # For Figure Case Study Tobacco Smoking and Chewing
+                # For Figure Case Study B cell malignancies
+                plt.title(sub_figure_type, fontsize=fontsize, pad=10, loc='center')
 
         else:
             anchored_text_signature = AnchoredText(title_signature,
@@ -2362,6 +2411,7 @@ def plot_replication_time_figure(output_dir,
 
     elif figure_type == MANUSCRIPT:
         plt.title(title, fontsize=fontsize, pad=pad, loc='center',fontweight='semibold')
+
         # For circle around number of cancer types
         # if num_of_all_tissues<10:
         #     bbox_to_anchor_list = [0.96, 1.42]
@@ -2412,7 +2462,7 @@ def plot_replication_time_figure(output_dir,
         if (len(simulations_lows)==len(simulations_highs)):
             plt.fill_between(x, np.array(simulations_lows), np.array(simulations_highs), facecolor=facecolor, zorder=2)
 
-    if figure_type==COSMIC:
+    if figure_type == COSMIC:
         if cancer_type == None:
             objects = ('Across All Cancer Types Real', 'Across All Cancer Types Simulations')
         else:
@@ -2438,8 +2488,8 @@ def plot_replication_time_figure(output_dir,
         labelbottom=False)  # labels along the bottom edge are off
 
     if figure_type == COSMIC:
-        plt.xlabel('Early <--- Replication Time ---> Late', fontsize=labelsize, fontweight='semibold')
-        plt.ylabel('\nNormalized mutation density', fontsize=labelsize, fontweight='semibold')
+        plt.xlabel('Early <--- Replication Time ---> Late', fontsize = labelsize, fontweight = 'semibold')
+        plt.ylabel('\nNormalized Mutation Density', fontsize = labelsize, fontweight = 'semibold')
 
     # if figure_type == MANUSCRIPT and (signature == AGGREGATEDSUBSTITUTIONS or signature == AGGREGATEDDINUCS or signature == AGGREGATEDINDELS):
     #     plt.xlabel('Early <- Replication Time -> Late', fontsize=labelsize-35, fontweight='semibold')
@@ -2450,7 +2500,11 @@ def plot_replication_time_figure(output_dir,
         if cancer_type == None:
             figure_name = '%s_%s_%s.%s' % (cosmic_release_version, signature, COSMIC_REPLICATION_TIME, figure_file_extension)
         else:
-            NCI_Thesaurus_code = cancer_type_2_NCI_Thesaurus_code_dict[cancer_type]
+            try:
+                NCI_Thesaurus_code = cancer_type_2_NCI_Thesaurus_code_dict[cancer_type]
+            except:
+                print('For Your Information: %s has no NCI_Thesaurus_code' %(cancer_type))
+                NCI_Thesaurus_code = cancer_type
             figure_name = '%s_%s_%s_TA_%s.%s' % (cosmic_release_version, signature, COSMIC_REPLICATION_TIME, NCI_Thesaurus_code, figure_file_extension)
     elif figure_type == MANUSCRIPT:
         if cancer_type == None:
@@ -2473,11 +2527,6 @@ def plot_replication_time_figure(output_dir,
     plt.close(fig)
 
 
-def variance(data, ddof=0):
-     n = len(data)
-     mean = sum(data) / n
-     return sum((x - mean) ** 2 for x in data) / (n - ddof)
-
 def get_normalized_array(number_of_mutations_array, number_of_attributable_bases_array):
     mutations_density_array  = np.divide(number_of_mutations_array,number_of_attributable_bases_array)
     max_density = np.nanmax(mutations_density_array)
@@ -2489,11 +2538,15 @@ def get_normalized_array(number_of_mutations_array, number_of_attributable_bases
     return normalized_mutations_density_array
 
 
-def strictly_increasing(L):
-    return all(x<y for x, y in zip(L, L[1:]))
+def get_normalized_mutation_density_array(mutation_density_array):
+    max_density = np.nanmax(mutation_density_array)
+    if max_density > 0:
+        normalized_mutation_density_array = np.divide(mutation_density_array, max_density)
+    else:
+        normalized_mutation_density_array = np.nan
 
-def strictly_decreasing(L):
-    return all(x>y for x, y in zip(L, L[1:]))
+    return normalized_mutation_density_array
+
 
 def non_increasing(L):
     return all(x>=y for x, y in zip(L, L[1:]))
@@ -2515,14 +2568,19 @@ def calculate_sims_lows_means_highs(across_all_cancer_types_all_sims_2d_array):
     for col in range(cols):
         colwise_array = across_all_cancer_types_all_sims_2d_array[:, col]
         mu = np.nanmean(colwise_array)
+
+        # Standard deviation of the sample is the degree to which individuals within the sample differ from the sample mean
         sigma = np.nanstd(colwise_array)
         start, end = scipy.stats.norm.interval(0.95, loc = mu, scale = sigma/np.sqrt(len(colwise_array)))
-        # sigma = sem(colwise_array)
-        # start, end = scipy.stats.norm.interval(0.95, loc=mu, scale=sigma)
+
+        # Standard error of the sample mean is an estimate of how far the sample mean is likely to be from the population mean
+        # sigma = scipy.stats.sem(colwise_array) # standard error of the mean
+        # start, end = scipy.stats.norm.interval(alpha=0.95, loc=mu, scale=sigma)
+
         simulations_lows.append(start)
         simulations_highs.append(end)
 
-        # # These results in hairy figures for some DBS and ID signatures
+        # # Below statements resulted in hairy figures for some DBS and ID signatures
         # signal_min = np.nanmin(colwise_array)
         # signal_max = np.nanmax(colwise_array)
         # simulations_lows_list.append(signal_min)
@@ -2531,6 +2589,7 @@ def calculate_sims_lows_means_highs(across_all_cancer_types_all_sims_2d_array):
     return simulations_lows, simulations_means, simulations_highs
 
 
+# normalized mutation density will be vertically stacked, column-wise mean will be computed and normalized again.
 # For the given signature, accumulate replication timing across cancer types having this signature
 def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_dir,
     main_combined_output_dir,
@@ -2557,15 +2616,9 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
 
     signature_cancer_type_replication_time_df = pd.DataFrame(columns=["signature",
                     "cancer_type",
-                    "real_number_of_mutations_array", # shape (10,)
-                    "real_number_of_attributable_bases_array",  # shape (10,)
-                    "real_normalized_mutations_density_array",  # shape (10,) computed using the former two arrays
-                    "all_simulations_number_of_mutations_array",  # shape (number_of_simulations, 10) vertically stacked
-                    "all_simulations_number_of_attributable_bases_array", # shape (number_of_simulations, 10) vertically stacked
-                    "all_simulations_normalized_mutations_density_array", # shape (number_of_simulations, 10) vertically stacked
-                    "simulations_colwise_mean_number_of_mutations_array",  # shape (10,) column-wise mean of all simulations
-                    "simulations_colwise_mean_number_of_attributable_bases_array",  # shape (10,) column-wise mean of all simulations
-                    "simulations_normalized_mutations_density_array",  # shape (10,) computed using former two arrays
+                    "real_number_of_mutations_array", # shape (1,10)
+                    "real_normalized_mutations_density_array",  # shape (1,10)
+                    "simulations_means_normalized_mutations_density_array",  # shape (1,10)
                     "spearman_corr",
                     "spearman_p_value",
                     "spearman_q_value",
@@ -2573,6 +2626,8 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
                     "pearson_p_value",
                     "pearson_q_value",
                     "cancer_type_slope",
+                    "replication_timing_diff_btw_max_and_min",
+                    "abs_replication_timing_diff_btw_medians",
                     "cancer_type_decision",
                     "cutoff",
                     "number_of_mutations",
@@ -2581,10 +2636,10 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
                     "num_of_spearman_q_values_le_significance_level",
                     "num_of_tissues_with_pearson_corr_ge_cutoff",
                     "num_of_tissues_with_pearson_q_value_le_significance_level",
+                    "num_of_tissues_with_increasing_decision",
+                    "num_of_tissues_with_flat_decision",
+                    "num_of_tissues_with_decreasing_decision",
                     "num_of_all_tissues"])
-
-    # Cancer type decision INC DEC or FLAT
-    # decision = None
 
     spearman_p_values = []
     spearman_element_names = []
@@ -2597,29 +2652,18 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
     num_of_spearman_q_values_le_significance_level = 0
 
     num_of_all_tissues = 0
-    num_of_tissues_with_slope_flat = 0
+
     num_of_tissues_with_slope_increasing = 0
+    num_of_tissues_with_slope_flat = 0
     num_of_tissues_with_slope_decreasing = 0
 
     tissues_with_slope_flat = []
     tissues_with_slope_increasing = []
     tissues_with_slope_decreasing = []
 
-    # Across all cancer types
-    across_all_cancer_types_real_number_of_mutations_array = np.zeros((10,), dtype=np.int64)  # Accumulated
-    across_all_cancer_types_real_number_of_attributable_bases_array = np.zeros((10,), dtype=np.int64)  #Accumulated
-    across_all_cancer_types_real_normalized_mutation_density_array = np.zeros((10,), dtype=np.float64) # computed using former two arrays
-
-    # # Accumulate Version
-    # across_all_cancer_types_all_simulations_number_of_mutations_array = np.zeros((numberofSimulations,10))
-    # across_all_cancer_types_all_simulations_number_of_attributable_bases_array = np.zeros((numberofSimulations,10))
-    # across_all_cancer_types_all_simulations_normalized_mutation_density_array = np.zeros((numberofSimulations,10))
-
     # Vertically Stack Version
-    across_all_cancer_types_all_simulations_number_of_mutations_array = np.array([]) # vertically stacked
-    across_all_cancer_types_all_simulations_number_of_attributable_bases_array = np.array([]) # vertically stacked
+    across_all_cancer_types_real_normalized_mutation_density_array = np.array([]) # vertically stacked
     across_all_cancer_types_all_simulations_normalized_mutation_density_array = np.array([]) # vertically stacked
-
 
     if (signature == AGGREGATEDSUBSTITUTIONS) or (signature == AGGREGATEDINDELS) or (signature == AGGREGATEDDINUCS):
         sub_dir = signature
@@ -2687,7 +2731,6 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
                     os.path.exists(typebased_tissuebased_replication_time_normalized_mutation_densisty_filepath)):
 
                 real_number_of_mutations_array = np.loadtxt(typebased_tissuebased_replication_time_number_of_mutations_filepath, dtype = np.float64) .astype(int) # dtype = np.int64
-                real_number_of_attributable_bases_array = np.loadtxt(replication_time_number_of_attributable_bases_filepath, dtype = np.float64).astype(int) # dtype = np.int64
                 real_normalized_mutation_density_array = np.loadtxt(typebased_tissuebased_replication_time_normalized_mutation_densisty_filepath, dtype=np.float64)
 
                 if np.sum(real_number_of_mutations_array) < 2000:
@@ -2696,9 +2739,13 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
 
                 # Please note that nparray_number_of_attributable_bases is replication time dependent
                 # Therefore same for all signatures, same for all real data and simulations
+                # vertically stack real_normalized_mutation_density_array coming from each cancer type
                 if np.any(real_number_of_mutations_array):
-                    across_all_cancer_types_real_number_of_mutations_array += real_number_of_mutations_array
-                    across_all_cancer_types_real_number_of_attributable_bases_array += real_number_of_attributable_bases_array
+                    if across_all_cancer_types_real_normalized_mutation_density_array.size == 0:
+                        across_all_cancer_types_real_normalized_mutation_density_array = np.expand_dims(real_normalized_mutation_density_array, axis=0)
+                    else:
+                        across_all_cancer_types_real_normalized_mutation_density_array = np.vstack((across_all_cancer_types_real_normalized_mutation_density_array,
+                                                                                                    real_normalized_mutation_density_array))
                     num_of_all_tissues += 1
 
                 for simNum in range(1,numberofSimulations+1):
@@ -2731,19 +2778,17 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
                         else:
                             all_simulations_normalized_mutation_density_array = np.vstack((all_simulations_normalized_mutation_density_array, simulation_normalized_mutation_density_array))
 
+
+                # number of rows: 100 (number_of_simulations) number of cols 10
+                simulations_lows, simulations_means, simulations_highs = calculate_sims_lows_means_highs(all_simulations_normalized_mutation_density_array)
+
                 # Append row to dataframe for signature based cancer type based
                 signature_cancer_type_replication_time_df = signature_cancer_type_replication_time_df.append(
                     {"signature" : signature,
                     "cancer_type" : main_cancer_type, # Accumulate under main_cancer_type, formerly it was cancer_type
                     "real_number_of_mutations_array" : real_number_of_mutations_array.tolist(),
-                    "real_number_of_attributable_bases_array" : real_number_of_attributable_bases_array.tolist(),
-                    "real_normalized_mutations_density_array" : real_normalized_mutation_density_array.tolist(),
-                    "all_simulations_number_of_mutations_array" : all_simulations_number_of_mutations_array.tolist(),
-                    "all_simulations_number_of_attributable_bases_array" : all_simulations_number_of_attributable_bases_array.tolist(),
-                    "all_simulations_normalized_mutations_density_array" : all_simulations_normalized_mutation_density_array.tolist(),
-                    "simulations_colwise_mean_number_of_mutations_array" : np.nan,
-                    "simulations_colwise_mean_number_of_attributable_bases_array" : np.nan,
-                    "simulations_normalized_mutations_density_array" : np.nan,
+                    "real_normalized_mutations_density_array" : np.around(real_normalized_mutation_density_array,NUMBER_OF_DECIMAL_PLACES_TO_ROUND).tolist(),
+                    "simulations_means_normalized_mutations_density_array" : np.around(simulations_means,NUMBER_OF_DECIMAL_PLACES_TO_ROUND).tolist(),
                     "spearman_corr" : np.nan,
                     "spearman_p_value" : np.nan,
                     "spearman_q_value" : np.nan,
@@ -2751,6 +2796,8 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
                     "pearson_p_value" : np.nan,
                     "pearson_q_value" : np.nan,
                     "cancer_type_slope" : np.nan,
+                    "replication_timing_diff_btw_max_and_min" : np.nan,
+                    "abs_replication_timing_diff_btw_medians" : np.nan,
                     "cancer_type_decision" : np.nan,
                     "cutoff": np.nan,
                     "number_of_mutations" : np.nan,
@@ -2759,10 +2806,10 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
                     "num_of_spearman_q_values_le_significance_level" : np.nan,
                     "num_of_tissues_with_pearson_corr_ge_cutoff" : np.nan,
                     "num_of_tissues_with_pearson_q_value_le_significance_level" : np.nan,
+                    "num_of_tissues_with_increasing_decision" : np.nan,
+                    "num_of_tissues_with_flat_decision" : np.nan,
+                    "num_of_tissues_with_decreasing_decision" : np.nan,
                     "num_of_all_tissues" : np.nan}, ignore_index=True)
-
-                # rows 100 (number_of_simulations) cols 10
-                simulations_lows, simulations_means, simulations_highs = calculate_sims_lows_means_highs(all_simulations_normalized_mutation_density_array)
 
                 # Plot Cosmic Cancer type based figure in First Pass
                 plot_replication_time_figure(plot_output_dir,
@@ -2787,97 +2834,22 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
                                             cosmic_fontsize_labels = cosmic_fontsize_labels,
                                             sub_figure_type = sub_figure_type)
 
-            # (axis=0) column-wise
-            if (all_simulations_number_of_mutations_array.size > 0) and (all_simulations_number_of_attributable_bases_array.size > 0):
-                simulations_colwise_mean_number_of_mutations_array = np.nanmean(all_simulations_number_of_mutations_array, axis=0)
-                simulations_colwise_mean_number_of_attributable_bases_array = np.nanmean(all_simulations_number_of_attributable_bases_array, axis=0)
-                simulations_normalized_mutations_density_array = get_normalized_array(
-                    simulations_colwise_mean_number_of_mutations_array,
-                    simulations_colwise_mean_number_of_attributable_bases_array)
 
-                if signature_cancer_type_replication_time_df[
-                    (signature_cancer_type_replication_time_df['signature'] == signature) &
-                    (signature_cancer_type_replication_time_df['cancer_type'] == main_cancer_type)].values.any(): # cancer_type
-
-                    signature_cancer_type_replication_time_df.loc[
-                        ((signature_cancer_type_replication_time_df['signature'] == signature) &
-                         (signature_cancer_type_replication_time_df['cancer_type'] == main_cancer_type)), 'simulations_colwise_mean_number_of_mutations_array'] = signature_cancer_type_replication_time_df.loc[
-                        ((signature_cancer_type_replication_time_df['signature'] == signature) &
-                         (signature_cancer_type_replication_time_df['cancer_type'] == main_cancer_type)), 'simulations_colwise_mean_number_of_mutations_array'].map(lambda x : simulations_colwise_mean_number_of_mutations_array.tolist() if not np.isnan(simulations_colwise_mean_number_of_mutations_array).any() else np.nan)
-
-                    signature_cancer_type_replication_time_df.loc[
-                        ((signature_cancer_type_replication_time_df['signature'] == signature) &
-                         (signature_cancer_type_replication_time_df['cancer_type'] == main_cancer_type)), 'simulations_colwise_mean_number_of_attributable_bases_array'] = signature_cancer_type_replication_time_df.loc[
-                        ((signature_cancer_type_replication_time_df['signature'] == signature) &
-                         (signature_cancer_type_replication_time_df['cancer_type'] == main_cancer_type)), 'simulations_colwise_mean_number_of_attributable_bases_array'].map(lambda x: simulations_colwise_mean_number_of_attributable_bases_array.tolist() if not np.isnan(simulations_colwise_mean_number_of_attributable_bases_array).any() else np.nan)
-
-                    signature_cancer_type_replication_time_df.loc[
-                        ((signature_cancer_type_replication_time_df['signature'] == signature) &
-                         (signature_cancer_type_replication_time_df['cancer_type'] == main_cancer_type)), 'simulations_normalized_mutations_density_array'] = signature_cancer_type_replication_time_df.loc[
-                        ((signature_cancer_type_replication_time_df['signature'] == signature) &
-                         (signature_cancer_type_replication_time_df['cancer_type'] == main_cancer_type)), 'simulations_normalized_mutations_density_array'].map(lambda x : simulations_normalized_mutations_density_array.tolist() if not np.isnan(simulations_normalized_mutations_density_array).any() else np.nan)
-
-            # # Accumulate Version
-            # if across_all_cancer_types_all_simulations_number_of_mutations_array.shape == all_simulations_number_of_mutations_array.shape:
-            #     across_all_cancer_types_all_simulations_number_of_mutations_array += all_simulations_number_of_mutations_array
-            # else:
-            #     column_wise_mean = np.nanmean(all_simulations_number_of_mutations_array, axis=0)
-            #     num_of_existing_sims = all_simulations_number_of_mutations_array.shape[0]
-            #     num_of_required_repeats = numberofSimulations - num_of_existing_sims
-            #     temp_array = np.repeat(column_wise_mean, num_of_required_repeats, axis=0)
-            #     temp_array = temp_array.reshape(num_of_required_repeats, 10)
-            #     all_simulations_number_of_mutations_array = np.vstack(all_simulations_number_of_mutations_array, temp_array)
-            #     across_all_cancer_types_all_simulations_number_of_mutations_array += all_simulations_number_of_mutations_array
-            #
-            # if across_all_cancer_types_all_simulations_number_of_attributable_bases_array.shape == all_simulations_number_of_attributable_bases_array.shape:
-            #     across_all_cancer_types_all_simulations_number_of_attributable_bases_array += all_simulations_number_of_attributable_bases_array
-            # else:
-            #     column_wise_mean = np.nanmean(all_simulations_number_of_attributable_bases_array, axis=0)
-            #     num_of_existing_sims = all_simulations_number_of_attributable_bases_array.shape[0]
-            #     num_of_required_repeats = numberofSimulations - num_of_existing_sims
-            #     temp_array = np.repeat(column_wise_mean, num_of_required_repeats, axis=0)
-            #     temp_array = temp_array.reshape(num_of_required_repeats, 10)
-            #     all_simulations_number_of_attributable_bases_array = np.vstack(all_simulations_number_of_attributable_bases_array, temp_array)
-            #     across_all_cancer_types_all_simulations_number_of_attributable_bases_array += all_simulations_number_of_attributable_bases_array
-            #
-            # if across_all_cancer_types_all_simulations_normalized_mutation_density_array.shape == all_simulations_normalized_mutation_density_array.shape:
-            #     across_all_cancer_types_all_simulations_normalized_mutation_density_array += all_simulations_normalized_mutation_density_array
-            # else:
-            #     column_wise_mean = np.nanmean(all_simulations_normalized_mutation_density_array, axis=0)
-            #     num_of_existing_sims = all_simulations_normalized_mutation_density_array.shape[0]
-            #     num_of_required_repeats = numberofSimulations - num_of_existing_sims
-            #     temp_array = np.repeat(column_wise_mean, num_of_required_repeats, axis=0)
-            #     temp_array = temp_array.reshape(num_of_required_repeats, 10)
-            #     all_simulations_normalized_mutation_density_array = np.vstack(all_simulations_normalized_mutation_density_array, temp_array)
-            #     across_all_cancer_types_all_simulations_normalized_mutation_density_array += all_simulations_normalized_mutation_density_array
-
-            # Vertically stack across cancer types
-            if across_all_cancer_types_all_simulations_number_of_mutations_array.size == 0:
-                across_all_cancer_types_all_simulations_number_of_mutations_array = all_simulations_number_of_mutations_array
-            elif all_simulations_number_of_mutations_array.size>0:
-                across_all_cancer_types_all_simulations_number_of_mutations_array = np.vstack((across_all_cancer_types_all_simulations_number_of_mutations_array,
-                                                                                               all_simulations_number_of_mutations_array))
-            # Vertically stack across cancer types
-            if across_all_cancer_types_all_simulations_number_of_attributable_bases_array.size == 0:
-                across_all_cancer_types_all_simulations_number_of_attributable_bases_array = all_simulations_number_of_attributable_bases_array
-            elif all_simulations_number_of_attributable_bases_array.size>0:
-                across_all_cancer_types_all_simulations_number_of_attributable_bases_array = np.vstack((across_all_cancer_types_all_simulations_number_of_attributable_bases_array,
-                                                                                                        all_simulations_number_of_attributable_bases_array))
             # Vertically stack across cancer types
             if across_all_cancer_types_all_simulations_normalized_mutation_density_array.size == 0:
                 across_all_cancer_types_all_simulations_normalized_mutation_density_array = all_simulations_normalized_mutation_density_array
-            elif all_simulations_normalized_mutation_density_array.size>0:
+            elif all_simulations_normalized_mutation_density_array.size > 0:
                 across_all_cancer_types_all_simulations_normalized_mutation_density_array = np.vstack((across_all_cancer_types_all_simulations_normalized_mutation_density_array,
                                                                                                        all_simulations_normalized_mutation_density_array))
 
         else:
             print('FOR INFORMATION', cancer_type, signature, 'has', number_of_mutations,'mutations less than', number_of_mutations_required)
 
-    # Calculate typebased normalized mutation density
-    if (np.any(across_all_cancer_types_real_number_of_attributable_bases_array)):
-        across_all_cancer_types_real_normalized_mutation_density_array = get_normalized_array(
-            across_all_cancer_types_real_number_of_mutations_array,
-            across_all_cancer_types_real_number_of_attributable_bases_array)
+    # calculate across all cancer types real normalized mutation density
+    # First column-wise mean
+    # Second re-normalize
+    across_all_cancer_types_real_normalized_mutation_density_array = np.nanmean(across_all_cancer_types_real_normalized_mutation_density_array, axis=0)
+    across_all_cancer_types_real_normalized_mutation_density_array = get_normalized_mutation_density_array(across_all_cancer_types_real_normalized_mutation_density_array)
 
     # Second Pass
     # Calculate pearson correlation
@@ -2895,7 +2867,7 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
         cutoff = None
         if (signature==AGGREGATEDSUBSTITUTIONS) or (signature==AGGREGATEDINDELS) or (signature==AGGREGATEDDINUCS):
             number_of_mutations_filename = TABLE_MUTATIONTYPE_NUMBEROFMUTATIONS_NUMBEROFSAMPLES_SAMPLESLIST
-            number_of_mutations_filepath = os.path.join(combined_output_dir,cancer_type,DATA,number_of_mutations_filename)
+            number_of_mutations_filepath = os.path.join(combined_output_dir, cancer_type, DATA, number_of_mutations_filename)
             number_of_mutations_df = pd.read_csv(number_of_mutations_filepath, header=0, sep='\t')
             # mutation_type   number_of_mutations     number_of_samples       samples_list
             if signature==AGGREGATEDSUBSTITUTIONS:
@@ -2924,9 +2896,6 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
             typebased_tissuebased_replication_time_number_of_mutations_filename = "%s_NumberofMutations.txt" %(signature)
             typebased_tissuebased_replication_time_number_of_mutations_filepath = os.path.join(combined_output_dir,cancer_type,DATA,REPLICATION_TIME,sub_dir,typebased_tissuebased_replication_time_number_of_mutations_filename)
 
-            if (os.path.exists(typebased_tissuebased_replication_time_number_of_mutations_filepath)):
-                signature_cancer_type_number_of_mutations_array = np.loadtxt(typebased_tissuebased_replication_time_number_of_mutations_filepath, dtype=np.float64)
-
             typebased_tissuebased_replication_time_normalized_mutation_density_filename = "%s_NormalizedMutationDensity.txt" % (signature)
             typebased_tissuebased_replication_time_normalized_mutation_densisty_filepath = os.path.join(combined_output_dir, cancer_type, DATA, REPLICATION_TIME,sub_dir,typebased_tissuebased_replication_time_normalized_mutation_density_filename)
 
@@ -2943,44 +2912,66 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
                     cancer_type_m, cancer_type_b = pol = np.polyfit(x, cancer_type_y, 1)
 
                     # Internally set
+                    # Case1
                     # Positive slope and slope greater than cutoff
                     if cancer_type_m > replication_time_slope_cutoff and monotonic(cancer_type_y):
                         num_of_tissues_with_slope_increasing += 1
                         tissues_with_slope_increasing.append(main_cancer_type) # cancer_type
                         decision = INCREASING
+                        replication_timing_diff_btw_max_and_min = (np.max(cancer_type_y) - np.min(cancer_type_y))
+                        abs_replication_timing_diff_btw_medians = abs(np.median(cancer_type_y[0:3]) - np.median(cancer_type_y[7:]))
+                    # Case2
                     elif cancer_type_m > replication_time_slope_cutoff and \
                             (np.max(cancer_type_y) - np.min(cancer_type_y)) > replication_time_difference_between_min_and_max:
                         num_of_tissues_with_slope_increasing += 1
                         tissues_with_slope_increasing.append(main_cancer_type) # cancer_type
                         decision = INCREASING
+                        replication_timing_diff_btw_max_and_min = (np.max(cancer_type_y) - np.min(cancer_type_y))
+                        abs_replication_timing_diff_btw_medians = abs(np.median(cancer_type_y[0:3]) - np.median(cancer_type_y[7:]))
+                    # Case3
                     # Negative Slope and abs(slope) greater than cutoff
                     elif cancer_type_m < 0 and abs(cancer_type_m) > replication_time_slope_cutoff \
                             and monotonic(cancer_type_y):
                         num_of_tissues_with_slope_decreasing += 1
                         tissues_with_slope_decreasing.append(main_cancer_type) #cancer_type
                         decision = DECREASING
+                        replication_timing_diff_btw_max_and_min = (np.max(cancer_type_y) - np.min(cancer_type_y))
+                        abs_replication_timing_diff_btw_medians = abs(np.median(cancer_type_y[0:3]) - np.median(cancer_type_y[7:]))
+                    # Case4
                     elif cancer_type_m < 0 and abs(cancer_type_m) > replication_time_slope_cutoff \
                             and (np.max(cancer_type_y) - np.min(cancer_type_y)) > replication_time_difference_between_min_and_max:
                         num_of_tissues_with_slope_decreasing += 1
                         tissues_with_slope_decreasing.append(main_cancer_type)  # cancer_type
                         decision = DECREASING
-                    elif abs(cancer_type_m) > replication_time_slope_cutoff \
-                            and (np.max(cancer_type_y)-np.min(cancer_type_y)) <= replication_time_difference_between_min_and_max:
-                        num_of_tissues_with_slope_flat += 1
-                        tissues_with_slope_flat.append(main_cancer_type) # cancer_type
-                        decision = FLAT
-                    elif abs(cancer_type_m) > replication_time_slope_cutoff \
-                            and (abs(np.median(cancer_type_y[0:3]) - np.median(cancer_type_y[7:])) <= replication_time_difference_between_medians):
-                        num_of_tissues_with_slope_flat += 1
-                        tissues_with_slope_flat.append(main_cancer_type) # cancer_type
-                        decision = FLAT
+                        replication_timing_diff_btw_max_and_min = (np.max(cancer_type_y) - np.min(cancer_type_y))
+                        abs_replication_timing_diff_btw_medians = abs(np.median(cancer_type_y[0:3]) - np.median(cancer_type_y[7:]))
+                    # Case5
                     # Slope less than cutoff
                     elif abs(cancer_type_m) <= replication_time_slope_cutoff:
                         num_of_tissues_with_slope_flat += 1
                         tissues_with_slope_flat.append(main_cancer_type) # cancer_type
                         decision = FLAT
+                        replication_timing_diff_btw_max_and_min = (np.max(cancer_type_y) - np.min(cancer_type_y))
+                        abs_replication_timing_diff_btw_medians = abs(np.median(cancer_type_y[0:3]) - np.median(cancer_type_y[7:]))
+                    # Case6
+                    elif abs(cancer_type_m) > replication_time_slope_cutoff \
+                            and (np.max(cancer_type_y)-np.min(cancer_type_y)) <= replication_time_difference_between_min_and_max:
+                        num_of_tissues_with_slope_flat += 1
+                        tissues_with_slope_flat.append(main_cancer_type) # cancer_type
+                        decision = FLAT
+                        replication_timing_diff_btw_max_and_min = (np.max(cancer_type_y) - np.min(cancer_type_y))
+                        abs_replication_timing_diff_btw_medians = abs(np.median(cancer_type_y[0:3]) - np.median(cancer_type_y[7:]))
+                    elif abs(cancer_type_m) > replication_time_slope_cutoff \
+                            and (abs(np.median(cancer_type_y[0:3]) - np.median(cancer_type_y[7:])) <= replication_time_difference_between_medians):
+                        num_of_tissues_with_slope_flat += 1
+                        tissues_with_slope_flat.append(main_cancer_type) # cancer_type
+                        decision = FLAT
+                        replication_timing_diff_btw_max_and_min = (np.max(cancer_type_y) - np.min(cancer_type_y))
+                        abs_replication_timing_diff_btw_medians = abs(np.median(cancer_type_y[0:3]) - np.median(cancer_type_y[7:]))
                     else:
                         decision = UNKNOWN
+                        replication_timing_diff_btw_max_and_min = np.nan
+                        abs_replication_timing_diff_btw_medians = np.nan
                         print('FOR INFORMATION', signature, cancer_type, decision)
 
                     pearson_corr, pearson_p_value = pearsonr(signature_cancer_type_normalized_mutation_density_array,
@@ -2997,8 +2988,8 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
                         pearson_element_names.append((signature,main_cancer_type)) # cancer_type
 
                     # Cancer type
-                    if signature_cancer_type_replication_time_df[(signature_cancer_type_replication_time_df['signature']==signature) &
-                                                              (signature_cancer_type_replication_time_df['cancer_type']==main_cancer_type)].values.any(): # cancer_type
+                    if signature_cancer_type_replication_time_df[(signature_cancer_type_replication_time_df['signature'] == signature) &
+                                                              (signature_cancer_type_replication_time_df['cancer_type'] == main_cancer_type)].values.any(): # cancer_type
 
                         signature_cancer_type_replication_time_df.loc[((signature_cancer_type_replication_time_df['signature'] == signature) &
                                     (signature_cancer_type_replication_time_df['cancer_type'] == main_cancer_type)), 'spearman_corr' ] = spearman_corr # cancer_type
@@ -3013,7 +3004,13 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
                                     (signature_cancer_type_replication_time_df['cancer_type'] == main_cancer_type)), 'pearson_p_value' ] = pearson_p_value # cancer_type
 
                         signature_cancer_type_replication_time_df.loc[((signature_cancer_type_replication_time_df['signature'] == signature) &
-                                    (signature_cancer_type_replication_time_df['cancer_type'] == main_cancer_type)), 'cancer_type_slope' ] = cancer_type_m # cancer_type
+                                    (signature_cancer_type_replication_time_df['cancer_type'] == main_cancer_type)), 'cancer_type_slope' ] = np.around(cancer_type_m, NUMBER_OF_DECIMAL_PLACES_TO_ROUND) if cancer_type_m is not None else np.nan # cancer_type
+
+                        signature_cancer_type_replication_time_df.loc[((signature_cancer_type_replication_time_df['signature'] == signature) &
+                                    (signature_cancer_type_replication_time_df['cancer_type'] == main_cancer_type)), 'replication_timing_diff_btw_max_and_min' ] = np.around(replication_timing_diff_btw_max_and_min, NUMBER_OF_DECIMAL_PLACES_TO_ROUND) if replication_timing_diff_btw_max_and_min is not None else np.nan # cancer_type
+
+                        signature_cancer_type_replication_time_df.loc[((signature_cancer_type_replication_time_df['signature'] == signature) &
+                                    (signature_cancer_type_replication_time_df['cancer_type'] == main_cancer_type)), 'abs_replication_timing_diff_btw_medians' ] = np.around(abs_replication_timing_diff_btw_medians, NUMBER_OF_DECIMAL_PLACES_TO_ROUND) if abs_replication_timing_diff_btw_medians is not None else np.nan # cancer_type
 
                         signature_cancer_type_replication_time_df.loc[((signature_cancer_type_replication_time_df['signature'] == signature) &
                                     (signature_cancer_type_replication_time_df['cancer_type'] == main_cancer_type)), 'cancer_type_decision' ] = decision # cancer_type
@@ -3025,7 +3022,9 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
                                     (signature_cancer_type_replication_time_df['cancer_type'] == main_cancer_type)), 'number_of_mutations'] = number_of_mutations # cancer_type
 
                         signature_cancer_type_replication_time_df.loc[((signature_cancer_type_replication_time_df['signature'] == signature) &
-                                    (signature_cancer_type_replication_time_df['cancer_type'] == main_cancer_type)), 'average_probability'] = average_probability # cancer_type
+                                    (signature_cancer_type_replication_time_df['cancer_type'] == main_cancer_type)), 'average_probability'] = np.around(average_probability, NUMBER_OF_DECIMAL_PLACES_TO_ROUND) if average_probability is not None else np.nan # cancer_type
+
+
 
     # Signature Based Across All Cancer Types
     if (np.any(across_all_cancer_types_real_normalized_mutation_density_array)):
@@ -3043,7 +3042,7 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
             num_of_tissues_with_pearson_q_value_le_significance_level=len(np.argwhere(pearson_corrected_p_values <= replication_time_significance_level))
 
         for element_index, element_name in enumerate(spearman_element_names,0):
-            (signature, cancer_type)= element_name
+            (signature, cancer_type) = element_name
             spearman_q_value = spearman_corrected_p_values[element_index]
 
             if signature_cancer_type_replication_time_df[
@@ -3064,19 +3063,6 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
                     ((signature_cancer_type_replication_time_df['signature'] == signature) &
                      (signature_cancer_type_replication_time_df['cancer_type'] == cancer_type)), 'pearson_q_value'] = pearson_q_value
 
-        # (axis=0)  Take column-wise mean
-        across_all_cancer_types_simulations_colwise_mean_number_of_mutations_array = np.nanmean(across_all_cancer_types_all_simulations_number_of_mutations_array, axis=0)
-        across_all_cancer_types_simulations_colwise_mean_number_of_attributable_bases_array = np.nanmean(across_all_cancer_types_all_simulations_number_of_attributable_bases_array, axis=0)
-
-        # Normalize
-        across_all_cancer_types_simulations_normalized_mutations_density_array = get_normalized_array(
-            across_all_cancer_types_simulations_colwise_mean_number_of_mutations_array,
-            across_all_cancer_types_simulations_colwise_mean_number_of_attributable_bases_array)
-
-        # # Take Average for Accumulation Version
-        # across_all_cancer_types_all_simulations_normalized_mutation_density_array = \
-        #     across_all_cancer_types_all_simulations_normalized_mutation_density_array / num_of_all_tissues
-
         simulations_lows, \
         simulations_means, \
         simulations_highs = calculate_sims_lows_means_highs(across_all_cancer_types_all_simulations_normalized_mutation_density_array)
@@ -3085,16 +3071,9 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
         signature_cancer_type_replication_time_df = signature_cancer_type_replication_time_df.append(
             {"signature" : signature,
             "cancer_type" : ACROSS_ALL_CANCER_TYPES,
-            "real_number_of_mutations_array" : across_all_cancer_types_real_number_of_mutations_array.tolist(), # accumulated
-            "real_number_of_attributable_bases_array" : across_all_cancer_types_real_number_of_attributable_bases_array.tolist(), # accumulated
-            "real_normalized_mutations_density_array" : across_all_cancer_types_real_normalized_mutation_density_array.tolist(), # computed using former two arrays
-            "all_simulations_number_of_mutations_array" : across_all_cancer_types_all_simulations_number_of_mutations_array.tolist(), # vertically stacked
-            "all_simulations_number_of_attributable_bases_array" : across_all_cancer_types_all_simulations_number_of_attributable_bases_array.tolist(), # vertically stacked
-            "all_simulations_normalized_mutations_density_array" : across_all_cancer_types_all_simulations_normalized_mutation_density_array.tolist(), # vertically stacked
-            "simulations_colwise_mean_number_of_mutations_array": across_all_cancer_types_simulations_colwise_mean_number_of_mutations_array.tolist(), # column-wise mean
-            "simulations_colwise_mean_number_of_attributable_bases_array": across_all_cancer_types_simulations_colwise_mean_number_of_attributable_bases_array.tolist(), # column-wise mean
-            # "simulations_normalized_mutations_density_array": across_all_cancer_types_simulations_normalized_mutations_density_array.tolist(),# computed using former two arrays
-            "simulations_normalized_mutations_density_array": simulations_means.tolist(),
+            "real_number_of_mutations_array" : np.nan,
+            "real_normalized_mutations_density_array" : np.around(across_all_cancer_types_real_normalized_mutation_density_array, NUMBER_OF_DECIMAL_PLACES_TO_ROUND).tolist(),
+            "simulations_means_normalized_mutations_density_array": np.around(simulations_means, NUMBER_OF_DECIMAL_PLACES_TO_ROUND).tolist(),
             "spearman_corr" : np.nan,
             "spearman_p_value" : np.nan,
             "spearman_q_value" : np.nan,
@@ -3102,6 +3081,8 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
             "pearson_p_value" : np.nan,
             "pearson_q_value" : np.nan,
             "cancer_type_slope" : np.nan,
+            "replication_timing_diff_btw_max_and_min" : np.nan,
+            "abs_replication_timing_diff_btw_medians": np.nan,
             "cancer_type_decision"  : np.nan,
             "cutoff": np.nan,
             "number_of_mutations" : np.nan,
@@ -3110,6 +3091,9 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
             "num_of_spearman_q_values_le_significance_level" : num_of_spearman_q_values_le_significance_level,
             "num_of_tissues_with_pearson_corr_ge_cutoff" : num_of_tissues_with_pearson_corr_ge_cutoff,
             "num_of_tissues_with_pearson_q_value_le_significance_level" : num_of_tissues_with_pearson_q_value_le_significance_level,
+            "num_of_tissues_with_increasing_decision" : num_of_tissues_with_slope_increasing,
+            "num_of_tissues_with_flat_decision" : num_of_tissues_with_slope_flat,
+            "num_of_tissues_with_decreasing_decision" : num_of_tissues_with_slope_decreasing,
             "num_of_all_tissues" : num_of_all_tissues}, ignore_index=True)
 
         # COSMIC
@@ -3144,156 +3128,12 @@ def accumulate_replication_time_across_all_cancer_types_plot_figure(plot_output_
     return  signature_cancer_type_replication_time_df
 
 
-# Regression pdf
-# Feb8 2021
-def fill_replication_time_figures_regression_pdfs(plot_output_dir,
-                                                  combined_output_dir,
-                                                  signature_tuples,
-                                                  cancer_types,
-                                                  signature2cancer_type2new_properties_list_dict):
-    #Replication Time
-    path= os.path.join(plot_output_dir,REPLICATION_TIME)
-
-    # For each type create a pdf
-    # In each pdf, one figure for across all tissues and one figure for each tissue
-    for (signature, signature_type) in signature_tuples:
-        interested_file_list = []
-
-        # type across_all_tissues
-        figurename = '%s_replication_time_%s.png' % (signature, REGRESSION)
-        filepath = os.path.join(path, REGRESSION, figurename)
-
-        if os.path.exists(filepath):
-            interested_file_list.append(filepath)
-
-        signature_with_underscore = signature + '_'
-
-        for cancer_type in cancer_types:
-            #tissue
-            cancer_type_output_path = os.path.join(combined_output_dir,cancer_type, FIGURE, REPLICATION_TIME)
-
-            #There can be a replication time figure for number of mutations all zeros.
-            #This check is to avoid displaying empty replication time figure
-            figurename = '%s_%s_replication_time_%s.png' % (signature, cancer_type, REGRESSION)
-            signaturebased_cutoff_file_path = os.path.join(plot_output_dir,REPLICATION_TIME,REGRESSION, figurename)
-
-            if (os.path.exists(signaturebased_cutoff_file_path)):
-                interested_file_list.append(signaturebased_cutoff_file_path)
-
-        #For replication time pdfs
-        if (len(interested_file_list)>0) :
-            # One pdf for each type, first left image: signature across all tissue prob05 --- first right image: signature across all tissues prob09
-            # other images: type for each tissue prob05 --- type for each tissue prob09
-            print('################')
-            pdffile_name = "%s_across_all_tissues_and_each_tissue.pdf" % (signature)
-            pdf_file_path = os.path.join(path,PDF_FILES,REGRESSION, pdffile_name)
-
-            print(pdf_file_path)
-            print('################')
-            c = canvas.Canvas(pdf_file_path, pagesize=letter)
-            width, height = letter  # keep for later
-            print('canvas letter: width=%d height=%d' % (width, height))
-            # width=612 height=792
-
-            # Center header
-            c.setFont("Times-Roman", 15)
-            title = 'Replication Time' + ' ' + signature
-
-            title_width = stringWidth(title, "Times-Roman", 15)
-            c.drawString((width - title_width) / 2, height - 20, title)
-
-            # One page can take 8 images
-            # For images
-            c.setFont("Times-Roman", 8)
-            figureCount=0
-
-            figure_width = 6
-
-            figure_left_x = 40
-            figure_left_label_x = figure_left_x
-
-            figure_middle_x = 200
-
-            figure_right_x = 350
-            figure_right_label_x = figure_right_x
-
-            y = 590
-            label_y_plus = 170
-
-            for file in interested_file_list:
-                #SBS1_83300_replication_time.png
-                # output_dir, cancer_type, 'figure', 'all', 'replication_time', 'SBS1_83300_replication_time.png'
-
-                #First file across all tissues
-                if (file==interested_file_list[0]):
-                    tissue = ''
-                    pearson_corr = ''
-                    img = utils.ImageReader(file)
-                    iw, ih = img.getSize()
-                    print('image: width=%d height=%d' % (iw, ih))
-                    aspect = ih / float(iw)
-                    print(file)
-                    figureCount=figureCount+2
-                    #To the center
-                    c.drawImage(file, figure_middle_x, y, figure_width * cm, figure_width * aspect * cm)
-                    y = y - 180
-                #each tissue
-                else:
-                    indexEnd = file.index('replication_time_regression')
-                    indexSlashForward = file.rfind(signature, 0, indexEnd-1)
-                    tissue=file[indexSlashForward+len(signature)+1:indexEnd-1]
-
-                    if (signature in signature2cancer_type2new_properties_list_dict) and (tissue in signature2cancer_type2new_properties_list_dict[signature]):
-                        # signature2cancer_type2properties_list_dict
-                        # properties_list
-                        # 0 numpy_array_list,
-                        # 1 f_value,
-                        # 2 f_p_value,
-                        # 3 f_q_value,
-                        # 4 cutoff,
-                        # 5 numberofMutations,
-                        # 6 average_probability,
-                        # 7 num_of_tissues_with_f_p_value,
-                        # 8 num_of_f_q_values_gt_significance_level,
-                        # 9 num_of_all_tissues
-                        f_q_value='f_q_value: %.6f ' %signature2cancer_type2new_properties_list_dict[signature][tissue][3]
-                    else:
-                        f_q_value = 'f_q_value is not available'
-
-                    img = utils.ImageReader(file)
-                    iw, ih = img.getSize()
-                    print('image: width=%d height=%d' % (iw, ih))
-                    aspect = ih / float(iw)
-                    print(file)
-                    figureCount = figureCount + 1
-
-                    # To the left
-                    if (figureCount % 2 == 1):
-                        c.drawImage(file, figure_left_x, y, figure_width * cm, figure_width * aspect * cm)
-                        c.setFont("Times-Roman", 8)
-                        c.drawString(figure_left_label_x, y + label_y_plus, tissue)
-                        c.drawString(figure_left_label_x+100, y + label_y_plus, f_q_value)
-                    # To the right
-                    elif (figureCount % 2 == 0):
-                        c.drawImage(file, figure_right_x, y, figure_width * cm, figure_width * aspect * cm)
-                        c.setFont("Times-Roman", 8)
-                        c.drawString(figure_right_label_x, y + label_y_plus, tissue)
-                        c.drawString(figure_right_label_x+100, y + label_y_plus, f_q_value)
-                        y = y - 180
-                    #There will  be 8 figures in one page except the first page (7 figures)
-                    if (figureCount%8 == 0):
-                        c.showPage()
-                        c.setFont("Times-Roman", 8)
-                        y = 590
-            c.save()
-
-# DEC 27, 2019
 def fill_replication_time_figures_pdfs(plot_output_dir,
                                        combined_output_dir,
                                        signature_tuples,
                                        cancer_types,
                                        all_signatures_replication_time_df):
-    #Replication Time
+    # Replication Time
     path= os.path.join(plot_output_dir, REPLICATION_TIME)
 
     # For each type create a pdf
@@ -3311,7 +3151,7 @@ def fill_replication_time_figures_pdfs(plot_output_dir,
         signature_with_underscore = signature + '_'
 
         for cancer_type in cancer_types:
-            #tissue
+            # tissue
             cancer_type_output_path = os.path.join(combined_output_dir,cancer_type, FIGURE, REPLICATION_TIME)
 
             # There can be a replication time figure for number of mutations all zeros.
@@ -3324,7 +3164,7 @@ def fill_replication_time_figures_pdfs(plot_output_dir,
             typebased_tissuebased_replication_time_number_of_mutations_filepath = os.path.join(combined_output_dir,cancer_type, DATA,REPLICATION_TIME,sub_dir,typebased_tissuebased_replication_time_number_of_mutations_filename)
 
             if (os.path.exists(typebased_tissuebased_replication_time_number_of_mutations_filepath)):
-                nparray_number_of_mutations = np.loadtxt(typebased_tissuebased_replication_time_number_of_mutations_filepath, dtype=np.int64)
+                nparray_number_of_mutations = np.loadtxt(typebased_tissuebased_replication_time_number_of_mutations_filepath) # dtype default float legacy dtype=np.int64
                 if np.any(nparray_number_of_mutations) and os.path.exists(cancer_type_output_path):
                     for file in os.listdir(cancer_type_output_path):
                         if (signature_with_underscore in file) and ('_replication_time.png' in file):
@@ -3333,7 +3173,7 @@ def fill_replication_time_figures_pdfs(plot_output_dir,
                             if (os.path.exists(signaturebased_cutoff_file_path)):
                                 interested_file_list.append(signaturebased_cutoff_file_path)
 
-        #For replication time pdfs
+        # For replication time pdfs
         if (len(interested_file_list)>0) :
             # One pdf for each type, first left image: signature across all tissue prob05 --- first right image: signature across all tissues prob09
             # other images: type for each tissue prob05 --- type for each tissue prob09
@@ -3376,11 +3216,11 @@ def fill_replication_time_figures_pdfs(plot_output_dir,
 
             ###############################################################
             for file in interested_file_list:
-                #SBS1_83300_replication_time.png
+                # SBS1_83300_replication_time.png
                 # output_dir, cancer_type, 'figure', 'all', 'replication_time', 'SBS1_83300_replication_time.png'
 
-                #First file across all tissues
-                if (file==interested_file_list[0]):
+                # First file across all tissues
+                if (file == interested_file_list[0]):
                     tissue = ''
                     pearson_corr = ''
                     img = utils.ImageReader(file)
@@ -3392,75 +3232,47 @@ def fill_replication_time_figures_pdfs(plot_output_dir,
                     #To the center
                     c.drawImage(file, figure_middle_x, y, figure_width * cm, figure_width * aspect * cm)
                     y = y - 160
-                #each tissue
+                # each tissue
                 else:
                     indexEnd = file.index('figure')
                     indexSlashForward = file.rfind('/', 0, indexEnd-1)
                     tissue=file[indexSlashForward+1:indexEnd-1]
 
-                    # all_signatures_replication_time_df = pd.DataFrame(columns=["signature",
-                    #                                                                   "cancer_type",
-                    #                                                                   "real_number_of_mutations_array",
-                    #                                                                   "real_number_of_attributable_bases_array",
-                    #                                                                   "real_normalized_mutations_density_array",
-                    #                                                                   "all_simulations_number_of_mutations_array",
-                    #                                                                   "all_simulations_number_of_attributable_bases_array",
-                    #                                                                   "all_simulations_normalized_mutations_density_array",
-                    #                                                                   "simulations_colwise_mean_number_of_mutations_array",
-                    #                                                                   "simulations_colwise_mean_number_of_attributable_bases_array",
-                    #                                                                   "simulations_normalized_mutations_density_array",
-                    #                                                                   "spearman_corr",
-                    #                                                                   "spearman_p_value",
-                    #                                                                   "spearman_q_value",
-                    #                                                                   "pearson_corr",
-                    #                                                                   "pearson_p_value",
-                    #                                                                   "pearson_q_value",
-                    #                                                                   "cancer_type_slope",
-                    #                                                                   "cancer_type_decision",
-                    #                                                                   "cutoff",
-                    #                                                                   "number_of_mutations",
-                    #                                                                   "average_probability",
-                    #                                                                   "num_of_tissues_with_spearman_ge_cutoff",
-                    #                                                                   "num_of_spearman_q_values_le_significance_level",
-                    #                                                                   "num_of_tissues_with_pearson_corr_ge_cutoff",
-                    #                                                                   "num_of_tissues_with_pearson_q_value_le_significance_level",
-                    #                                                                   "num_of_all_tissues"])
-
                     if (all_signatures_replication_time_df[
-                        (all_signatures_replication_time_df['signature']==signature) &
-                        (all_signatures_replication_time_df['cancer_type']==tissue)].values.any()):
+                        (all_signatures_replication_time_df['signature'] == signature) &
+                        (all_signatures_replication_time_df['cancer_type'] == tissue)].values.any()):
 
                         pearson_corr = all_signatures_replication_time_df[
                             (all_signatures_replication_time_df['signature']==signature) &
                             (all_signatures_replication_time_df['cancer_type']==tissue)]['pearson_corr'].values[0]
 
                         cancer_type_slope = all_signatures_replication_time_df[
-                            (all_signatures_replication_time_df['signature']==signature) &
-                            (all_signatures_replication_time_df['cancer_type']==tissue)]['cancer_type_slope'].values[0]
+                            (all_signatures_replication_time_df['signature'] == signature) &
+                            (all_signatures_replication_time_df['cancer_type'] == tissue)]['cancer_type_slope'].values[0]
 
                         cancer_type_decision = all_signatures_replication_time_df[
-                            (all_signatures_replication_time_df['signature']==signature) &
-                            (all_signatures_replication_time_df['cancer_type']==tissue)]['cancer_type_decision'].values[0]
+                            (all_signatures_replication_time_df['signature'] == signature) &
+                            (all_signatures_replication_time_df['cancer_type'] == tissue)]['cancer_type_decision'].values[0]
 
                         real_number_of_mutations_array = all_signatures_replication_time_df[
-                            (all_signatures_replication_time_df['signature']==signature) &
-                            (all_signatures_replication_time_df['cancer_type']==tissue)]['real_number_of_mutations_array'].values[0]
+                            (all_signatures_replication_time_df['signature'] == signature) &
+                            (all_signatures_replication_time_df['cancer_type'] == tissue)]['real_number_of_mutations_array'].values[0]
 
                         real_normalized_mutations_density_array = all_signatures_replication_time_df[
-                            (all_signatures_replication_time_df['signature']==signature) &
-                            (all_signatures_replication_time_df['cancer_type']==tissue)]['real_normalized_mutations_density_array'].values[0]
+                            (all_signatures_replication_time_df['signature'] == signature) &
+                            (all_signatures_replication_time_df['cancer_type'] == tissue)]['real_normalized_mutations_density_array'].values[0]
 
-                        pearson_corr='Pearson Corr: %.2f ' %pearson_corr
-                        slope='Slope: %.6f' %cancer_type_slope
-                        decision='%s' %cancer_type_decision
+                        pearson_corr = 'Pearson Corr: %.2f ' %pearson_corr
+                        slope = 'Slope: %.6f' %cancer_type_slope
+                        decision = '%s' %cancer_type_decision
                         real_number_of_mutations_array = "%s" %(real_number_of_mutations_array)
                         real_normalized_mutations_density_array = [round(mutation_density,2) for mutation_density in real_normalized_mutations_density_array]
                         real_normalized_mutations_density_array = "%s" % (real_normalized_mutations_density_array)
 
                     else:
-                        pearson_corr='Pearson correlation is not available'
-                        slope='Slope is not available'
-                        decision='Decision is not available'
+                        pearson_corr = 'Pearson correlation is not available'
+                        slope = 'Slope is not available'
+                        decision = 'Decision is not available'
                         real_number_of_mutations_array = "Number of mutations not available"
                         real_normalized_mutations_density_array = "Normalized mutations density not available"
 
@@ -3504,7 +3316,7 @@ def fill_processivity_figures_pdf(plot_output_dir,interested_figure_file_list):
 
     path= os.path.join(plot_output_dir,PROCESSIVITY,PDF_FILES)
 
-    #For processivity pdfs
+    # For processivity pdfs
     if (len(interested_figure_file_list)>0) :
         ###############################################################
         # One pdf for each type, first left image: signature across all tissue prob05 --- first right image: signature across all tissues prob09
@@ -4231,7 +4043,6 @@ def plot_processivity_figure(path,
     plt.close(fig)
 
 
-# FEB 3, 2020
 # Horizontal Processivity Colorbar
 def plot_processivity_colorbar_horizontal(output_path, cmap, v_min, v_max):
     fig = plt.figure(figsize=(8, 3))
@@ -4358,7 +4169,7 @@ def prepare_and_plot_processivity_data_across_all_tissues(plot_output_dir,
                  "qvalue": np.nan,
                  "minus_log10_qvalue": np.nan,
                  "zscore": np.nan,
-                 "expected_avg_number_of_processive_groups": stacked_means_list}, ignore_index = True)
+                 "expected_avg_number_of_processive_groups": np.around(stacked_means_list, NUMBER_OF_DECIMAL_PLACES_TO_ROUND).tolist()}, ignore_index = True)
 
     return plot_processivity_mediator(processivity_output_dir,
                                       signature_processive_group_length_properties_df,
@@ -4456,43 +4267,7 @@ def generate_processivity_pdf(plot_output_dir,
                                                                                                                minimum_required_processive_group_length,
                                                                                                                minimum_required_number_of_processive_groups)
 
-    # Write excel files
-    excel_file_name = '%s_%s.xlsx' %(cosmic_release_version, COSMIC_PROCESSIVITY)
-    excel_file_path = os.path.join(plot_output_dir, PROCESSIVITY, EXCEL_FILES, excel_file_name)
-    df_list = [all_cancer_types_processivity_df, across_all_cancer_types_pooled_processivity_df]
-    sheet_list = ['Cancer_Type_Based', 'Across_All_Cancer_Types']
-    write_excel_file(df_list, sheet_list, excel_file_path)
-
     across_all_cancer_types_pooled_processivity_df['cancer_type'] = ACROSS_ALL_CANCER_TYPES
-
-    all_cancer_types_processivity_df = all_cancer_types_processivity_df[['signature', 'cancer_type',
-                                                                        'processive_group_length',
-                                                                        'number_of_processive_groups',
-                                                                        'log10_number_of_processive_groups',
-                                                                        'radius', 'avg_sims', 'min_sims', 'max_sims',
-                                                                        'mean_sims', 'std_sims', 'pvalue', 'qvalue',
-                                                                        'minus_log10_qvalue', 'zscore',
-                                                                        'expected_number_of_processive_groups']]
-
-    across_all_cancer_types_pooled_processivity_df = across_all_cancer_types_pooled_processivity_df[['signature', 'cancer_type',
-                                                                                                     'processive_group_length',
-                                                                                                     'avg_number_of_processive_groups',
-                                                                                                     'log10_avg_number_of_processive_groups',
-                                                                                                     'radius', 'avg_sims', 'min_sims', 'max_sims',
-                                                                                                     'mean_sims', 'std_sims', 'pvalue', 'qvalue',
-                                                                                                     'minus_log10_qvalue',	'zscore',
-                                                                                                     'expected_avg_number_of_processive_groups']]
-
-    # Write COSMIC processivity data files
-    # Signature based for across all cancer types and each cancer type
-    signature_array = across_all_cancer_types_pooled_processivity_df['signature'].unique()
-    for signature in signature_array:
-        data_file_name = '%s_%s_%s.txt' % (cosmic_release_version, signature, COSMIC_PROCESSIVITY)
-        data_file_path = os.path.join(plot_output_dir, PROCESSIVITY, DATA_FILES, data_file_name)
-        signature_based_df = all_cancer_types_processivity_df[(all_cancer_types_processivity_df['signature'] == signature)]
-        signature_based_df.to_csv(data_file_path, sep='\t', index=False, mode='w')
-        signature_based_df = across_all_cancer_types_pooled_processivity_df[(across_all_cancer_types_pooled_processivity_df['signature'] == signature)]
-        signature_based_df.to_csv(data_file_path, sep='\t', index=False, mode='a')
 
     # For Figure Case Study SBS4
     return all_cancer_types_processivity_df, across_all_cancer_types_pooled_processivity_df
@@ -4583,43 +4358,37 @@ def generate_replication_time_pdfs(plot_output_dir,
                 cosmic_fontsize_labels,
                 sub_figure_type)
 
-    # Write Excel File
-    # Same for Manuscript and Cosmic
-    excel_file_name = '%s_%s.xlsx' %(cosmic_release_version, COSMIC_REPLICATION_TIME)
-    excel_file_path = os.path.join(plot_output_dir,REPLICATION_TIME,EXCEL_FILES,excel_file_name)
-    df_list = [all_signatures_replication_time_df]
-    sheet_list = ['Replication_Time']
-    write_excel_file(df_list, sheet_list, excel_file_path)
-
-    # # Fill PDF files for internal usage with number of mutations
+    # Fill PDF files for internal usage with number of mutations
     fill_replication_time_figures_pdfs(plot_output_dir,
                                        combined_output_dir,
                                        signature_tuples,
                                        cancer_types,
                                        all_signatures_replication_time_df)
 
-    all_signatures_replication_time_df['pearson_correlation_cutoff'] = pearson_spearman_correlation_cutoff
-    all_signatures_replication_time_df['significance_level'] = replication_time_significance_level
-
-    # Display only these columns in data files
-    # signature
-    # cancer_type
-    # real_normalized_mutations_density_array
-    # simulations_normalized_mutations_density_array
-    # num_of_tissues_with_pearson_corr_ge_cutoff
-    # num_of_tissues_with_pearson_q_value_le_significance_level
-    # num_of_all_tissues
-    # pearson_correlation_cutoff
-    # significance_level
+    # Write Excel File
+    # Same for Manuscript and Cosmic
     all_signatures_replication_time_df = all_signatures_replication_time_df[['signature',
-                                                                           'cancer_type',
-                                                                           'real_normalized_mutations_density_array',
-                                                                           'simulations_normalized_mutations_density_array',
-                                                                           'num_of_tissues_with_pearson_corr_ge_cutoff',
-                                                                           'num_of_tissues_with_pearson_q_value_le_significance_level',
-                                                                           'num_of_all_tissues',
-                                                                           'pearson_correlation_cutoff',
-                                                                           'significance_level']]
+                                                                            'cancer_type',
+                                                                            'real_number_of_mutations_array',
+                                                                            'real_normalized_mutations_density_array',
+                                                                            'simulations_means_normalized_mutations_density_array',
+                                                                            'cancer_type_slope',
+                                                                            'replication_timing_diff_btw_max_and_min',
+                                                                            'abs_replication_timing_diff_btw_medians',
+                                                                            'cancer_type_decision',
+                                                                            'cutoff',
+                                                                            'number_of_mutations',
+                                                                            'average_probability',
+                                                                            'num_of_tissues_with_increasing_decision',
+                                                                            'num_of_tissues_with_flat_decision',
+                                                                            'num_of_tissues_with_decreasing_decision',
+                                                                            'num_of_all_tissues']]
+
+    excel_file_name = '%s_%s.xlsx' %(cosmic_release_version, COSMIC_REPLICATION_TIME)
+    excel_file_path = os.path.join(plot_output_dir,REPLICATION_TIME,EXCEL_FILES,excel_file_name)
+    df_list = [all_signatures_replication_time_df]
+    sheet_list = ['Replication_Time']
+    write_excel_file(df_list, sheet_list, excel_file_path)
 
     # Write Cosmic replication time data files
     # Signature based for across all cancer types and each cancer type
@@ -4629,7 +4398,13 @@ def generate_replication_time_pdfs(plot_output_dir,
 
         # signature_based_df = all_signatures_replication_time_df[ (all_signatures_replication_time_df['signature'] == signature) & (all_signatures_replication_time_df['cancer_type'] == ACROSS_ALL_CANCER_TYPES) ]
         signature_based_df = all_signatures_replication_time_df[ (all_signatures_replication_time_df['signature'] == signature) ]
-        signature_based_df.to_csv(data_file_path, sep='\t', index=False, mode='w')
+
+        # write if there is a result to show up
+        if len(signature_based_df) > 0 :
+            with open(data_file_path, 'w') as f:
+                # header line
+                f.write("# Only cancer types with minimum 2000 mutations for SBS signatures and minimum 1000 mutations for DBS and ID signatures with average probability at least 0.75 are considered.\n")
+                signature_based_df.to_csv(f, sep='\t', index=False)
 
 
 def get_minimum_number_of_overlaps_required(signature,
@@ -4711,7 +4486,7 @@ def fill_across_all_cancer_types_df(occupancy_df,
         number_of_cancer_types = cancer_types_array.size
         number_of_library_files = library_files_array.size
 
-        across_all_occupancy_df=across_all_occupancy_df.append(
+        across_all_occupancy_df = across_all_occupancy_df.append(
             {"signature": signature,
              "number_of_library_files": number_of_library_files,
              "number_of_library_files_considered": 0,
@@ -4878,7 +4653,7 @@ def fill_signature_all_dna_elements_pdfs(output_dir, dir_name, signature, dna_el
 
     y = 570
 
-    #For nucleosome occupancy pdfs
+    # For nucleosome occupancy pdfs
     if (len(interested_file_list)>1):
         for file, dna_element in interested_file_list:
 
@@ -4975,6 +4750,7 @@ def generate_occupancy_pdfs(plot_output_dir,
     end = int(plus_minus+window_size/2)
 
     deleteOldData(os.path.join(plot_output_dir, OCCUPANCY, dna_element))
+
     os.makedirs(os.path.join(plot_output_dir, OCCUPANCY, dna_element),exist_ok=True)
     os.makedirs(os.path.join(plot_output_dir, OCCUPANCY, dna_element, TABLES),exist_ok=True)
     os.makedirs(os.path.join(plot_output_dir, OCCUPANCY, dna_element, EXCEL_FILES),exist_ok=True)
@@ -5041,6 +4817,7 @@ def generate_occupancy_pdfs(plot_output_dir,
                                                                                               cosmic_linewidth_plot,
                                                                                               cosmic_title_all_cancer_types,
                                                                                               figure_case_study)
+
     # Write occupancy tables dataframes using latest figure_type in figure_types
     filename = "Combined_PCAWG_nonPCAWG_%s_Cancer_Type_Based.txt" % (dna_element)
     filepath = os.path.join(plot_output_dir, OCCUPANCY, dna_element, TABLES, filename)
@@ -5069,8 +4846,10 @@ def generate_occupancy_pdfs(plot_output_dir,
         feature_name = dna_element + '_' + COSMIC_OCCUPANCY
 
     # Consider only some columns and reorder them
-    occupancy_df = occupancy_df[["signature", "cancer_type", "cutoff", "number_of_mutations", "average_probability",
-                                 "file_name", "pearson_corr", "pearson_p_value", "pearson_q_value",
+    occupancy_df = occupancy_df[["signature", "cancer_type",
+                                 "cutoff", "number_of_mutations", "average_probability", "file_name",
+                                 # "is_eligible",
+                                 "pearson_corr", "pearson_p_value", "pearson_q_value",
                                  "real_average_number_of_overlaps", "sims_average_number_of_overlaps",
                                  "avg_real_signal", "sim_data_avg_signal", "fold_change",
                                  "real_average_signal_array", "sims_average_signal_array"]]
@@ -5098,10 +4877,23 @@ def generate_occupancy_pdfs(plot_output_dir,
         # NCI_Thesaurus_code = cancer_type_2_NCI_Thesaurus_code_dict[cancer_type]
         data_file_name = '%s_%s_%s.txt' % (cosmic_release_version, signature, feature_name)
         data_file_path = os.path.join(plot_output_dir, OCCUPANCY, dna_element, DATA_FILES, data_file_name)
+
         signature_based_df = occupancy_df[occupancy_df['signature'] == signature]
-        signature_based_df.to_csv(data_file_path, sep='\t', index=False, mode='w')
-        signature_based_df = across_all_occupancy_df[across_all_occupancy_df['signature'] == signature]
-        signature_based_df.to_csv(data_file_path, sep='\t', index=False, mode='a')
+
+        # write if there is a result to show up and if there is a result for ACROSS_ALL_CANCER_TYPES
+        if (len(signature_based_df) > 0) and \
+                (signature_based_df[signature_based_df['cancer_type'] == ACROSS_ALL_CANCER_TYPES].values.any()):
+            # header line
+            with open(data_file_path, 'w') as f:
+                f.write("# Only cancer types with minimum 2000 mutations for SBS signatures and minimum 1000 mutations for DBS and ID signatures with average probability at least 0.75 are considered.\n")
+                signature_based_df.to_csv(f, sep='\t', index=False)
+
+        # might be confusing to end user
+        # signature_based_df = across_all_occupancy_df[across_all_occupancy_df['signature'] == signature]
+        # if len(signature_based_df)>0:
+        #     signature_based_df.to_csv(data_file_path, sep='\t', index=False, mode='a')
+
+
 
     # Write occupancy pfds using latest figure_type in figure_types
     fill_occupancy_pdfs(plot_output_dir,
@@ -5120,7 +4912,6 @@ def write_excel_file(df_list, sheet_list, file_name):
     for dataframe, sheet in zip(df_list, sheet_list):
         dataframe.to_excel(writer, sheet_name=sheet, startrow=0 , startcol=0, index=False)
     writer.save()
-
 
 
 # copied from Figure_Case_Study_SBS4
@@ -5209,14 +5000,14 @@ def plot_cosmic_processivity_figure_across_all_tissues_and_tissue_based_together
         norm = plt.Normalize(v_min, v_max)
 
         # To get rid of  UserWarning: Attempting to set identical left==right results in singular transformations; automatically expanding.
-        if (len(processive_group_length_list)>1):
+        if (len(processive_group_length_list) > 1):
             plt.xlim([1,index+1])
             ax.set_xticks(np.arange(0,index+2,1))
         else:
             plt.xlim([0,len(processive_group_length_list)])
             ax.set_xticks(np.arange(0,len(processive_group_length_list)+1,1))
 
-        if (len(signature_list)>1):
+        if (len(signature_list) > 1):
             plt.ylim([1, len(signature_list)])
         else:
             plt.ylim([0, len(signature_list)])
@@ -5358,10 +5149,21 @@ def plot_cosmic_processivity_figure_across_all_tissues_and_tissue_based_together
         plt.cla()
         plt.close(fig)
 
+# Sample input_dir and output_dir
+# input_dir = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'SigProfilerTopographyRuns', 'Combined_PCAWG_nonPCAWG_4th_iteration')
+# output_dir = os.path.join('/oasis', 'tscc', 'scratch', 'burcak', 'SigProfilerTopographyRuns', 'combined_pcawg_and_nonpcawg_figures_pdfs', '4th_iteration')
+
+# input_dir = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'SigProfilerTopographyRuns', 'Combined_PCAWG_nonPCAWG_prob_mode')
+# output_dir = os.path.join('/oasis', 'tscc', 'scratch', 'burcak', 'SigProfilerTopographyRuns', 'combined_pcawg_and_nonpcawg_figures_pdfs', 'prob_mode')
+
+# input_dir = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'SigProfilerTopographyRuns', 'Combined_PCAWG_nonPCAWG_prob_mode_05')
+# output_dir = os.path.join('/oasis', 'tscc', 'scratch', 'burcak', 'SigProfilerTopographyRuns', 'combined_pcawg_and_nonpcawg_figures_pdfs', 'prob_mode_05')
+
 # Main Function
 # Artifact signatures are removed for manuscript
 # No need to set as a parameter in main function
-def main(cluster_type = TSCC,
+def main(input_dir,
+         output_dir,
          occupancy = True,
          plot_occupancy = True,
          replication_time = True,
@@ -5388,14 +5190,7 @@ def main(cluster_type = TSCC,
          cosmic_release_version = 'v3.2',
          figure_file_extension = 'jpg'):
 
-    if (cluster_type == TSCC):
-        # tscc
-        combined_output_dir = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'SigProfilerTopographyRuns', 'Combined_PCAWG_nonPCAWG_4th_iteration')
-        alternative_output_dir = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'SigProfilerTopographyRuns', 'PCAWG_nonPCAWG_lymphomas')
-
-        # tscc oasis
-        os.makedirs(os.path.join('/oasis', 'tscc', 'scratch', 'burcak', 'SigProfilerTopographyRuns', 'combined_pcawg_and_nonpcawg_figures_pdfs', '4th_iteration'), exist_ok=True)
-        plot_output_dir = os.path.join('/oasis', 'tscc', 'scratch', 'burcak', 'SigProfilerTopographyRuns', 'combined_pcawg_and_nonpcawg_figures_pdfs', '4th_iteration')
+    os.makedirs(output_dir, exist_ok=True)
 
     # For real run include alll signatures
     sbs_signatures = ['SBS1', 'SBS2', 'SBS3', 'SBS4','SBS5', 'SBS6', 'SBS7a', 'SBS7b', 'SBS7c', 'SBS7d', 'SBS8',
@@ -5412,9 +5207,9 @@ def main(cluster_type = TSCC,
                      'ID14', 'ID15', 'ID16', 'ID17']
 
     # # For testing/debugging have one signature from each type
-    # sbs_signatures = []
+    # sbs_signatures = ['SBS31']
     # dbs_signatures = []
-    # id_signatures = ['ID4','ID8','ID11']
+    # id_signatures = []
 
     # These are the 40 tissues for combined PCAWG and nonPCAWG + ESCC
     cancer_types = ['ALL', 'Bladder-TCC', 'Bone-Benign', 'Bone-Osteosarc', 'CNS-GBM', 'CNS-Medullo', 'CNS-PiloAstro',
@@ -5441,27 +5236,61 @@ def main(cluster_type = TSCC,
     plus_minus_epigenomics = 1000
     window_size = 100
 
-    # # For real run
-    # dna_elements = [(NUCLEOSOME, NUCLEOSOME_OCCUPANCY),
-    #                 (CTCF, EPIGENOMICS_OCCUPANCY),
-    #                 (H3K4me1, EPIGENOMICS_OCCUPANCY),
-    #                 (H3K4me2, EPIGENOMICS_OCCUPANCY),
-    #                 (H3K4me3, EPIGENOMICS_OCCUPANCY),
-    #                 (H3K9ac, EPIGENOMICS_OCCUPANCY),
-    #                 (H3K27ac, EPIGENOMICS_OCCUPANCY),
-    #                 (H3K36me3, EPIGENOMICS_OCCUPANCY),
-    #                 (H3K79me2, EPIGENOMICS_OCCUPANCY),
-    #                 (H4K20me1, EPIGENOMICS_OCCUPANCY),
-    #                 (H2AFZ, EPIGENOMICS_OCCUPANCY),
-    #                 (H3K9me3, EPIGENOMICS_OCCUPANCY),
-    #                 (H3K27me3, EPIGENOMICS_OCCUPANCY),
-    #                 (ATAC_SEQ, EPIGENOMICS_OCCUPANCY)]
+    # For real run
+    dna_elements = [(NUCLEOSOME, NUCLEOSOME_OCCUPANCY),
+                    (CTCF, EPIGENOMICS_OCCUPANCY),
+                    (ATAC_SEQ, EPIGENOMICS_OCCUPANCY),
+                    (H3K4me1, EPIGENOMICS_OCCUPANCY),
+                    (H3K4me2, EPIGENOMICS_OCCUPANCY),
+                    (H3K4me3, EPIGENOMICS_OCCUPANCY),
+                    (H3K9ac, EPIGENOMICS_OCCUPANCY),
+                    (H3K27ac, EPIGENOMICS_OCCUPANCY),
+                    (H3K36me3, EPIGENOMICS_OCCUPANCY),
+                    (H3K79me2, EPIGENOMICS_OCCUPANCY),
+                    (H4K20me1, EPIGENOMICS_OCCUPANCY),
+                    (H2AFZ, EPIGENOMICS_OCCUPANCY),
+                    (H3K9me3, EPIGENOMICS_OCCUPANCY),
+                    (H3K27me3, EPIGENOMICS_OCCUPANCY)]
 
-    # dna_elements = [(NUCLEOSOME, NUCLEOSOME_OCCUPANCY),
-    #                 (CTCF, EPIGENOMICS_OCCUPANCY)]
-
+    # dna_elements = [(NUCLEOSOME, NUCLEOSOME_OCCUPANCY), (CTCF, EPIGENOMICS_OCCUPANCY)] # for testing/debugging
     # dna_elements = [(NUCLEOSOME, NUCLEOSOME_OCCUPANCY)] # for testing/debugging
-    dna_elements = [(CTCF, EPIGENOMICS_OCCUPANCY)] # for testing/debugging
+    # dna_elements = [(CTCF, EPIGENOMICS_OCCUPANCY)] # for testing/debugging
+    # dna_elements = [(H3K27ac, EPIGENOMICS_OCCUPANCY)]  # for testing/debugging
+
+    if replication_time:
+        cosmic_legend = True
+        cosmic_signature = True
+        cosmic_fontsize_text = 20
+        cosmic_cancer_type_fontsize = 20/3
+        cosmic_fontweight = 'semibold'
+        cosmic_fontsize_labels = 10
+        sub_figure_type = None
+
+        generate_replication_time_pdfs(output_dir,
+                                       input_dir,
+                                       cancer_types,
+                                       sbs_signatures,
+                                       id_signatures,
+                                       dbs_signatures,
+                                       number_of_simulations,
+                                       figure_types,
+                                       number_of_mutations_required_list_for_others,
+                                       cosmic_release_version,
+                                       figure_file_extension,
+                                       replication_time_significance_level,
+                                       replication_time_slope_cutoff,
+                                       replication_time_difference_between_min_and_max,
+                                       replication_time_difference_between_medians,
+                                       pearson_spearman_correlation_cutoff,
+                                       cosmic_legend,
+                                       cosmic_signature,
+                                       cosmic_fontsize_text,
+                                       cosmic_cancer_type_fontsize,
+                                       cosmic_fontweight,
+                                       cosmic_fontsize_labels,
+                                       sub_figure_type)
+
+
 
     if occupancy:
         cosmic_legend = True
@@ -5476,8 +5305,8 @@ def main(cluster_type = TSCC,
         figure_case_study = None
 
         for (dna_element, occupancy_type) in dna_elements:
-            generate_occupancy_pdfs(plot_output_dir,
-                                    combined_output_dir,
+            generate_occupancy_pdfs(output_dir,
+                                    input_dir,
                                     occupancy_type,
                                     dna_element,
                                     cancer_types,
@@ -5515,53 +5344,20 @@ def main(cluster_type = TSCC,
     # No new analysis
     # This part ony generate signature based pdf for all DNA elements occupancy analysis to see all together
     if (plot_occupancy):
-        generate_signature_based_occupancy_pdf(plot_output_dir,
+        generate_signature_based_occupancy_pdf(output_dir,
                                                 dna_elements,
                                                 sbs_signatures,
                                                 id_signatures,
                                                 dbs_signatures,
                                                 figure_file_extension)
 
-    if replication_time:
-        cosmic_legend = True
-        cosmic_signature = True
-        cosmic_fontsize_text = 20
-        cosmic_cancer_type_fontsize = 20/3
-        cosmic_fontweight = 'semibold'
-        cosmic_fontsize_labels = 10
-        sub_figure_type = None
-
-        generate_replication_time_pdfs(plot_output_dir,
-                                       combined_output_dir,
-                                       cancer_types,
-                                       sbs_signatures,
-                                       id_signatures,
-                                       dbs_signatures,
-                                       number_of_simulations,
-                                       figure_types,
-                                       number_of_mutations_required_list_for_others,
-                                       cosmic_release_version,
-                                       figure_file_extension,
-                                       replication_time_significance_level,
-                                       replication_time_slope_cutoff,
-                                       replication_time_difference_between_min_and_max,
-                                       replication_time_difference_between_medians,
-                                       pearson_spearman_correlation_cutoff,
-                                       cosmic_legend,
-                                       cosmic_signature,
-                                       cosmic_fontsize_text,
-                                       cosmic_cancer_type_fontsize,
-                                       cosmic_fontweight,
-                                       cosmic_fontsize_labels,
-                                       sub_figure_type)
-
     if processivity:
         # MANUSCRIPT All Signatures across all tissues figure
         # COSMIC across all tissues and tissue based figures
         # signatures attributed to artifacts are handled within generate_processivity_pdf
         # in function plot_processivity_across_all_tissues
-        all_cancer_types_processivity_df, across_all_cancer_types_pooled_processivity_df = generate_processivity_pdf(plot_output_dir,
-                                  combined_output_dir,
+        all_cancer_types_processivity_df, across_all_cancer_types_pooled_processivity_df = generate_processivity_pdf(output_dir,
+                                  input_dir,
                                   cancer_types,
                                   number_of_simulations,
                                   figure_types,
@@ -5571,8 +5367,9 @@ def main(cluster_type = TSCC,
                                   minimum_required_processive_group_length,
                                   minimum_required_number_of_processive_groups)
 
+
         # COSMIC Across All Tissues and Tissue Based Together Figures
-        signature2cancer_type_list_dict = get_signature2cancer_type_list_dict(combined_output_dir, cancer_types)
+        signature2cancer_type_list_dict = get_signature2cancer_type_list_dict(input_dir, cancer_types)
 
         for signature in sbs_signatures:
             signature_tissue_type_tuples, \
@@ -5582,7 +5379,7 @@ def main(cluster_type = TSCC,
             signatures_ylabels_on_the_heatmap = list(reversed(signatures_ylabels_on_the_heatmap))
 
             # New Figure for COSMIC
-            plot_cosmic_processivity_figure_across_all_tissues_and_tissue_based_together(plot_output_dir,
+            plot_cosmic_processivity_figure_across_all_tissues_and_tissue_based_together(output_dir,
                                              all_cancer_types_processivity_df,
                                              across_all_cancer_types_pooled_processivity_df,
                                              cosmic_release_version,
@@ -5591,6 +5388,84 @@ def main(cluster_type = TSCC,
                                              signature_tissue_type_tuples,
                                              signatures_ylabels_on_the_heatmap,
                                              minimum_required_number_of_processive_groups)
+
+
+        # Set dtype as float for object types
+        all_cancer_types_processivity_df['log10_number_of_processive_groups'] = all_cancer_types_processivity_df['log10_number_of_processive_groups'].astype(np.float64)
+        all_cancer_types_processivity_df['radius'] = all_cancer_types_processivity_df['radius'].astype(np.float64)
+        all_cancer_types_processivity_df['avg_sims'] = all_cancer_types_processivity_df['avg_sims'].astype(np.float64)
+
+        # Round
+        all_cancer_types_processivity_df['log10_number_of_processive_groups'] = np.around(all_cancer_types_processivity_df['log10_number_of_processive_groups'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+        all_cancer_types_processivity_df['radius'] = np.around(all_cancer_types_processivity_df['radius'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+        all_cancer_types_processivity_df['avg_sims'] = np.around(all_cancer_types_processivity_df['avg_sims'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+        all_cancer_types_processivity_df['mean_sims'] = np.around(all_cancer_types_processivity_df['mean_sims'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+        all_cancer_types_processivity_df['std_sims'] = np.around(all_cancer_types_processivity_df['std_sims'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+        all_cancer_types_processivity_df['minus_log10_qvalue'] = np.around(all_cancer_types_processivity_df['minus_log10_qvalue'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+
+        # No need to show all columns
+        all_cancer_types_processivity_df = all_cancer_types_processivity_df[['signature', 'cancer_type',
+                                                                             'processive_group_length',
+                                                                             'number_of_processive_groups',
+                                                                             'log10_number_of_processive_groups',
+                                                                             'radius',
+                                                                             # 'avg_sims',
+                                                                             'min_sims', 'max_sims', 'mean_sims',
+                                                                             'std_sims',
+                                                                             'pvalue', 'qvalue', 'minus_log10_qvalue',
+                                                                             # 'zscore',
+                                                                             'expected_number_of_processive_groups']]
+
+        # Round
+        across_all_cancer_types_pooled_processivity_df['avg_number_of_processive_groups'] = np.around(across_all_cancer_types_pooled_processivity_df['avg_number_of_processive_groups'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+        across_all_cancer_types_pooled_processivity_df['log10_avg_number_of_processive_groups'] = np.around(across_all_cancer_types_pooled_processivity_df['log10_avg_number_of_processive_groups'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+        across_all_cancer_types_pooled_processivity_df['radius'] = np.around(across_all_cancer_types_pooled_processivity_df['radius'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+        across_all_cancer_types_pooled_processivity_df['avg_sims'] = np.around(across_all_cancer_types_pooled_processivity_df['avg_sims'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+        across_all_cancer_types_pooled_processivity_df['mean_sims'] = np.around(across_all_cancer_types_pooled_processivity_df['mean_sims'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+        across_all_cancer_types_pooled_processivity_df['std_sims'] = np.around(across_all_cancer_types_pooled_processivity_df['std_sims'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+        across_all_cancer_types_pooled_processivity_df['minus_log10_qvalue'] = np.around(across_all_cancer_types_pooled_processivity_df['minus_log10_qvalue'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+
+        # No need to show all columns
+        across_all_cancer_types_pooled_processivity_df = across_all_cancer_types_pooled_processivity_df[
+            ['signature', 'cancer_type',
+             'processive_group_length',
+             'avg_number_of_processive_groups',
+             'log10_avg_number_of_processive_groups', 'radius',
+             # 'avg_sims',
+             'min_sims', 'max_sims', 'mean_sims', 'std_sims',
+             'pvalue', 'qvalue', 'minus_log10_qvalue',
+             # 'zscore',
+             'expected_avg_number_of_processive_groups']]
+
+        # Write excel files
+        excel_file_name = '%s_%s.xlsx' % (cosmic_release_version, COSMIC_PROCESSIVITY)
+        excel_file_path = os.path.join(output_dir, PROCESSIVITY, EXCEL_FILES, excel_file_name)
+        df_list = [all_cancer_types_processivity_df, across_all_cancer_types_pooled_processivity_df]
+        sheet_list = ['Cancer_Type_Based', 'Across_All_Cancer_Types']
+        write_excel_file(df_list, sheet_list, excel_file_path)
+
+        # Write COSMIC processivity data files
+        # Signature based for across all cancer types and each cancer type
+        signature_array = across_all_cancer_types_pooled_processivity_df['signature'].unique()
+        for signature in signature_array:
+            data_file_name = '%s_%s_%s.txt' % (cosmic_release_version, signature, COSMIC_PROCESSIVITY)
+            data_file_path = os.path.join(output_dir, PROCESSIVITY, DATA_FILES, data_file_name)
+            if signature not in ['SBS288P']:
+                signature_based_df = all_cancer_types_processivity_df[
+                    (all_cancer_types_processivity_df['signature'] == signature)]
+                if len(signature_based_df) > 0:
+                    # header line
+                    with open(data_file_path, 'w') as f:
+                        f.write(
+                            "# Only cancer types with minimum 2000 mutations for SBS signatures with average probability at least 0.75 are considered.\n")
+                        signature_based_df.to_csv(f, sep='\t', index=False)
+
+                signature_based_df = across_all_cancer_types_pooled_processivity_df[
+                    (across_all_cancer_types_pooled_processivity_df['signature'] == signature)]
+                if len(signature_based_df) > 0:
+                    with open(data_file_path, 'a') as f:
+                        f.write('\n')
+                        signature_based_df.to_csv(f, sep='\t', index=False)
 
 
 def plot_processivity_legend(path, fontsize):
@@ -5603,19 +5478,6 @@ def plot_processivity_legend(path, fontsize):
     fig.savefig(figureFile)
     plt.close()
 
-
-def plot_processivity_color_bar_in_given_axis(fig, cax, norm, cmap, v_min, v_max, fontsize):
-    cax.grid(False)
-    cax.set_xticks([])
-    cax.set_yticks([])
-
-    for edge, spine in cax.spines.items():
-        spine.set_visible(False)
-
-    bounds = np.arange(v_min, v_max + 1, 2)
-    cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), cax=cax, ticks=bounds, spacing='proportional', orientation='vertical', shrink=0.5)
-    cb.ax.tick_params(labelsize=fontsize / 2)
-    cb.set_label("-log10\n(q-value)", verticalalignment='center', rotation=0, labelpad=80, fontsize=fontsize)
 
 # For SigProfilerTopography Manuscript Processivity Legend
 # For COSMIC website
@@ -5664,3 +5526,191 @@ def plot_processivity_legend_in_given_axis(ax, fontsize):
         left=False)  # labels along the bottom edge are off
 
     ax.grid(which='major', color='black', linestyle='-', linewidth=1)
+
+
+# @deprecated
+def compute_average_occupancy_array(signal_array, count_array, plus_minus):
+    average_signal_array =  np.zeros(plus_minus * 2 + 1)
+
+    np.seterr(divide='ignore', invalid='ignore')
+    if (np.any(count_array)):
+        average_signal_array = signal_array/count_array
+    np.seterr(divide='raise', invalid='ignore')
+
+    return average_signal_array
+
+
+# @deprecated
+def variance(data, ddof=0):
+    n = len(data)
+    mean = sum(data) / n
+    return sum((x - mean) ** 2 for x in data) / (n - ddof)
+
+
+# @deprecated
+def strictly_increasing(L):
+    return all(x<y for x, y in zip(L, L[1:]))
+
+
+# @deprecated
+def strictly_decreasing(L):
+    return all(x>y for x, y in zip(L, L[1:]))
+
+
+# @deprecated
+# Regression pdf
+def fill_replication_time_figures_regression_pdfs(plot_output_dir,
+                                                  combined_output_dir,
+                                                  signature_tuples,
+                                                  cancer_types,
+                                                  signature2cancer_type2new_properties_list_dict):
+    #Replication Time
+    path= os.path.join(plot_output_dir,REPLICATION_TIME)
+
+    # For each type create a pdf
+    # In each pdf, one figure for across all tissues and one figure for each tissue
+    for (signature, signature_type) in signature_tuples:
+        interested_file_list = []
+
+        # type across_all_tissues
+        figurename = '%s_replication_time_%s.png' % (signature, REGRESSION)
+        filepath = os.path.join(path, REGRESSION, figurename)
+
+        if os.path.exists(filepath):
+            interested_file_list.append(filepath)
+
+        signature_with_underscore = signature + '_'
+
+        for cancer_type in cancer_types:
+            #tissue
+            cancer_type_output_path = os.path.join(combined_output_dir,cancer_type, FIGURE, REPLICATION_TIME)
+
+            #There can be a replication time figure for number of mutations all zeros.
+            #This check is to avoid displaying empty replication time figure
+            figurename = '%s_%s_replication_time_%s.png' % (signature, cancer_type, REGRESSION)
+            signaturebased_cutoff_file_path = os.path.join(plot_output_dir,REPLICATION_TIME,REGRESSION, figurename)
+
+            if (os.path.exists(signaturebased_cutoff_file_path)):
+                interested_file_list.append(signaturebased_cutoff_file_path)
+
+        #For replication time pdfs
+        if (len(interested_file_list)>0) :
+            # One pdf for each type, first left image: signature across all tissue prob05 --- first right image: signature across all tissues prob09
+            # other images: type for each tissue prob05 --- type for each tissue prob09
+            print('################')
+            pdffile_name = "%s_across_all_tissues_and_each_tissue.pdf" % (signature)
+            pdf_file_path = os.path.join(path,PDF_FILES,REGRESSION, pdffile_name)
+
+            print(pdf_file_path)
+            print('################')
+            c = canvas.Canvas(pdf_file_path, pagesize=letter)
+            width, height = letter  # keep for later
+            print('canvas letter: width=%d height=%d' % (width, height))
+            # width=612 height=792
+
+            # Center header
+            c.setFont("Times-Roman", 15)
+            title = 'Replication Time' + ' ' + signature
+
+            title_width = stringWidth(title, "Times-Roman", 15)
+            c.drawString((width - title_width) / 2, height - 20, title)
+
+            # One page can take 8 images
+            # For images
+            c.setFont("Times-Roman", 8)
+            figureCount=0
+
+            figure_width = 6
+
+            figure_left_x = 40
+            figure_left_label_x = figure_left_x
+
+            figure_middle_x = 200
+
+            figure_right_x = 350
+            figure_right_label_x = figure_right_x
+
+            y = 590
+            label_y_plus = 170
+
+            for file in interested_file_list:
+                #SBS1_83300_replication_time.png
+                # output_dir, cancer_type, 'figure', 'all', 'replication_time', 'SBS1_83300_replication_time.png'
+
+                #First file across all tissues
+                if (file==interested_file_list[0]):
+                    tissue = ''
+                    pearson_corr = ''
+                    img = utils.ImageReader(file)
+                    iw, ih = img.getSize()
+                    print('image: width=%d height=%d' % (iw, ih))
+                    aspect = ih / float(iw)
+                    print(file)
+                    figureCount=figureCount+2
+                    #To the center
+                    c.drawImage(file, figure_middle_x, y, figure_width * cm, figure_width * aspect * cm)
+                    y = y - 180
+                #each tissue
+                else:
+                    indexEnd = file.index('replication_time_regression')
+                    indexSlashForward = file.rfind(signature, 0, indexEnd-1)
+                    tissue=file[indexSlashForward+len(signature)+1:indexEnd-1]
+
+                    if (signature in signature2cancer_type2new_properties_list_dict) and (tissue in signature2cancer_type2new_properties_list_dict[signature]):
+                        # signature2cancer_type2properties_list_dict
+                        # properties_list
+                        # 0 numpy_array_list,
+                        # 1 f_value,
+                        # 2 f_p_value,
+                        # 3 f_q_value,
+                        # 4 cutoff,
+                        # 5 numberofMutations,
+                        # 6 average_probability,
+                        # 7 num_of_tissues_with_f_p_value,
+                        # 8 num_of_f_q_values_gt_significance_level,
+                        # 9 num_of_all_tissues
+                        f_q_value='f_q_value: %.6f ' %signature2cancer_type2new_properties_list_dict[signature][tissue][3]
+                    else:
+                        f_q_value = 'f_q_value is not available'
+
+                    img = utils.ImageReader(file)
+                    iw, ih = img.getSize()
+                    print('image: width=%d height=%d' % (iw, ih))
+                    aspect = ih / float(iw)
+                    print(file)
+                    figureCount = figureCount + 1
+
+                    # To the left
+                    if (figureCount % 2 == 1):
+                        c.drawImage(file, figure_left_x, y, figure_width * cm, figure_width * aspect * cm)
+                        c.setFont("Times-Roman", 8)
+                        c.drawString(figure_left_label_x, y + label_y_plus, tissue)
+                        c.drawString(figure_left_label_x+100, y + label_y_plus, f_q_value)
+                    # To the right
+                    elif (figureCount % 2 == 0):
+                        c.drawImage(file, figure_right_x, y, figure_width * cm, figure_width * aspect * cm)
+                        c.setFont("Times-Roman", 8)
+                        c.drawString(figure_right_label_x, y + label_y_plus, tissue)
+                        c.drawString(figure_right_label_x+100, y + label_y_plus, f_q_value)
+                        y = y - 180
+                    #There will  be 8 figures in one page except the first page (7 figures)
+                    if (figureCount%8 == 0):
+                        c.showPage()
+                        c.setFont("Times-Roman", 8)
+                        y = 590
+            c.save()
+
+
+# @deprecated
+def plot_processivity_color_bar_in_given_axis(fig, cax, norm, cmap, v_min, v_max, fontsize):
+    cax.grid(False)
+    cax.set_xticks([])
+    cax.set_yticks([])
+
+    for edge, spine in cax.spines.items():
+        spine.set_visible(False)
+
+    bounds = np.arange(v_min, v_max + 1, 2)
+    cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), cax=cax, ticks=bounds, spacing='proportional', orientation='vertical', shrink=0.5)
+    cb.ax.tick_params(labelsize=fontsize / 2)
+    cb.set_label("-log10\n(q-value)", verticalalignment='center', rotation=0, labelpad=80, fontsize=fontsize)

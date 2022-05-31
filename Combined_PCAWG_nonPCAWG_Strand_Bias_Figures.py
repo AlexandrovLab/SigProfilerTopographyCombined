@@ -1,13 +1,15 @@
-# Combined PCAWG nonPCAWG Strand Bias Bar plots and circle plot figures
-# sftp the file to  /home/burcak/developer/python/SigProfilerTopographyAuxiliary/combined_pcawg_and_nonpcawg_figures_pdfs
-# Run by Combined_PCAWG_nonPCAWG_Strand_Bias_Figures_Mediator.py
-# output is under /oasis/tscc/scratch/burcak/SigProfilerTopographyRuns/combined_pcawg_and_nonpcawg_figures_pdfs/4th_iteration/
+# !/usr/bin/env python3
 
+# Author: burcakotlu
+
+# Contact: burcakotlu@eng.ucsd.edu
+
+# Combined PCAWG nonPCAWG strand asymmetry bar plots and circle plot figures
 # CONSTRAINTS
 # CONSTRAINT1 q_value <= SIGNIFICANCE_LEVEL
 # CONSTRAINT2 number of mutations on strands >= MINIMUM_REQUIRED_NUMBER_OF_MUTATIONS_ON_STRANDS
 # CONSTRAINT3 percentage of mutation on strands >= MINIMUM_REQUIRED_PERCENTAGE_OF_MUTATIONS_ON_STRANDS
-# CONSTRAINT4 To show up in the figure there must be at least 10% difference between the strands
+# CONSTRAINT4 To show up in the figure there must be at least 10% difference between the strands as odds ratio between real and simulated
 
 import os
 import pandas as pd
@@ -47,6 +49,7 @@ from Combined_Common import LYMPH_BNHL_NONCLUSTERED
 from Combined_Common import LYMPH_CLL
 from Combined_Common import LYMPH_CLL_CLUSTERED
 from Combined_Common import LYMPH_BNHL_NONCLUSTERED
+from Combined_Common import NUMBER_OF_DECIMAL_PLACES_TO_ROUND
 
 #turn it off with seterr
 # np.seterr(divide = 'ignore')
@@ -104,11 +107,6 @@ CANCER_TYPE='cancer_type'
 MUTATION_TYPE='mutation_type'
 TYPE = 'type'
 SIGNIFICANT_STRAND='significant_strand'
-
-# SIGNIFICANCE_LEVEL=0.01
-# MINIMUM_REQUIRED_NUMBER_OF_MUTATIONS_ON_STRANDS = 1000
-# MINIMUM_REQUIRED_PERCENTAGE_OF_MUTATIONS_ON_STRANDS = 5
-# NUMBER_OF_REQUIRED_MUTATIONS_FOR_STACKED_BAR_PLOT = 1
 
 ODDS_RATIO = 'Odds ratio' # ODDS_RATIO = REAL_RATIO / SIMS_RATIO
 REAL_RATIO = 'Real ratio' # strand1_real / strand2_real --- order in a/b can be predefined or in the favor of higher one
@@ -182,8 +180,10 @@ MUTOGRAPHS = 'MUTOGRAPHS'
 # strand_bias_color_bins = [0, 0.25, 0.5, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.5, 1.75, 2] # 12 bins for 12 colors
 strand_bias_color_bins = [0, 0.5, 0.8, 1, 1.2, 1.5, 2] # 6 bins for 6 colors
 
-PROPORTION_OF_CANCER_TYPES_WITH_STRAND_ASYMMERTY_OF_A_SIGNATURE = 'Proportion of cancer types with strand asymmetry of a signature'
-PROPORTION_OF_CANCER_TYPES_WITH_REGION_ASYMMERTY_OF_A_SIGNATURE = 'Proportion of cancer types with region asymmetry of a signature'
+PROPORTION_OF_CANCER_TYPES_WITH_STRAND_ASYMMERTY_OF_A_SIGNATURE = 'Proportion of cancer types with\n' \
+                                                                  'strand asymmetry of a signature'
+PROPORTION_OF_CANCER_TYPES_WITH_REGION_ASYMMERTY_OF_A_SIGNATURE = 'Proportion of cancer types with\n' \
+                                                                  'region asymmetry of a signature'
 
 # 12 colors
 # replication_strand_bias_colours = ['darkgoldenrod',
@@ -199,7 +199,7 @@ PROPORTION_OF_CANCER_TYPES_WITH_REGION_ASYMMERTY_OF_A_SIGNATURE = 'Proportion of
 #                'maroon',
 #                'darkred']
 
-# reduced number of columns: 6 colors
+# 6 colors
 replication_strand_bias_colours = [
     'goldenrod',
     'darkorange',
@@ -224,7 +224,7 @@ replication_strand_bias_colours = [
 #                                     'midnightblue'
 #                                     ]
 
-#reduced number of colors: 6 colors
+# 6 colors
 transcrition_strand_bias_colours = [
                                     'darkolivegreen',
                                     'olivedrab',
@@ -251,7 +251,7 @@ transcrition_strand_bias_colours = [
 #                                     'cyan' # Cosmic
 #                                     ]
 
-#reduced number of colors: 6 colors
+# 6 colors
 genic_vs_intergenic_bias_colours = [
                                     'dimgray',
                                     'gray',  # Cosmic
@@ -269,11 +269,7 @@ cmap_replication_strand_bias = mpl.colors.LinearSegmentedColormap.from_list("gol
                                                                              "darkorange",
                                                                              "orange",
                                                                              "gold",
-                                                                             # "khaki",
                                                                              "white",
-                                                                             # "mistyrose",
-                                                                             # "lightcoral",
-                                                                             # "coral",
                                                                             "salmon",
                                                                              "indianred",  # Cosmic
                                                                              "brown",
@@ -284,108 +280,61 @@ cmap_replication_strand_bias = mpl.colors.LinearSegmentedColormap.from_list("gol
 
 cmap_transcription_strand_bias = mpl.colors.LinearSegmentedColormap.from_list('green2blue',
                                                                               ['darkgreen',
-                                                                                # 'darkgreen',
-                                                                                # 'green',
-                                                                                # 'green',
-                                                                                # 'forestgreen',
                                                                                 'darkolivegreen',
                                                                                 'darkolivegreen',
                                                                                 'olivedrab',
                                                                                 'yellowgreen',  # Cosmic
                                                                                 'greenyellow',
-                                                                                # 'palegreen',
                                                                                 'white',
-                                                                                # 'aliceblue',
-                                                                                # 'lightsteelblue',
-                                                                                # 'steelblue',
                                                                                 'cornflowerblue',
                                                                                 'royalblue',  # Cosmic
                                                                                 'darkblue',
                                                                                 'navy',
                                                                                 'navy',
-                                                                                'midnightblue',
-                                                                                # 'midnightblue'
+                                                                                'midnightblue'
                                                                                 ])
-
-
 
 cmap_genic_versus_intergenic = mpl.colors.LinearSegmentedColormap.from_list("gray2cyan",
                                                                             ["dimgrey",
                                                                             "gray", # Cosmic
                                                                             "grey",
-                                                                            # "silver",
-                                                                            # "lightgray",
                                                                             "white",
-                                                                            # 'lightcyan',
                                                                             "paleturquoise",
                                                                             "cyan",  # Cosmic
                                                                             "darkturquoise"
-                                                                            # "teal",
                                                                             ])
 
-def readDictionary(filePath):
-    if (os.path.exists(filePath) and (os.path.getsize(filePath) > 0)):
-        with open(filePath,'r') as json_data:
-            dictionary = json.load(json_data)
-        return dictionary
-    else:
-        # return None
-        # Provide empty dictionary for not to fail for loops on None type dictionary
-        return {}
 
+# Sample input_dir and output_dir
+# input_dir = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'SigProfilerTopographyRuns', 'Combined_PCAWG_nonPCAWG_4th_iteration')
+# output_dir = os.path.join('/oasis', 'tscc', 'scratch', 'burcak', 'SigProfilerTopographyRuns', 'combined_pcawg_and_nonpcawg_figures_pdfs', '4th_iteration', 'strand_bias')
 
-def calculate_p_values(types_strand1_list,simulations_types_strand1_list,types_strand2_list,simulations_types_strand2_list):
-    types_strandbias_pvalues = []
+# input_dir = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'SigProfilerTopographyRuns', 'Combined_PCAWG_nonPCAWG_prob_mode')
+# output_dir = os.path.join('/oasis', 'tscc', 'scratch', 'burcak', 'SigProfilerTopographyRuns', 'combined_pcawg_and_nonpcawg_figures_pdfs', 'prob_mode', 'strand_bias')
 
-    #If there are no simulations case
-    if ((simulations_types_strand1_list is None) and  (simulations_types_strand2_list is None)):
-        simulations_types_strand1_list = [(x + y) / 2 for x, y in zip(types_strand1_list, types_strand2_list)]
-        simulations_types_strand2_list = simulations_types_strand1_list
-
-    for count1, count1_simulations, count2, count2_simulations in zip(types_strand1_list,
-                                                                      simulations_types_strand1_list,
-                                                                      types_strand2_list,
-                                                                      simulations_types_strand2_list):
-        #Is this true? Yes, it is correct.
-        # we compare whether there is  a significance difference between the counts
-        # namely, counts coming from the original data and the simulations
-        contingency_table_array = [[count1, count1_simulations], [count2, count2_simulations]]
-
-        if ((count1 < 3000000) and (count2 < 3000000) and (count1_simulations < 3000000) and (count2_simulations < 3000000)):
-            oddsratio, pvalue_SBS = stats.fisher_exact(contingency_table_array)
-        else:
-            chi2, pvalue_SBS, dof, expected = stats.chi2_contingency(contingency_table_array)
-        types_strandbias_pvalues.append(pvalue_SBS)
-
-        print('For internal checking ---- count1:%d count2:%d count1_simulations:%d count2_simulations:%d, pvalue_SBS:%0.E' %(count1,count2,count1_simulations,count2_simulations,pvalue_SBS))
-
-    return types_strandbias_pvalues
-
+# input_dir = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'SigProfilerTopographyRuns', 'Combined_PCAWG_nonPCAWG_prob_mode_05')
+# output_dir = os.path.join('/oasis', 'tscc', 'scratch', 'burcak', 'SigProfilerTopographyRuns', 'combined_pcawg_and_nonpcawg_figures_pdfs', 'prob_mode_05', 'strand_bias')
 
 # Main Function
 # Artifact signatures are removed only for manuscript figures
 # No need to set as a parameter in main function
-def main(figure_types = [MANUSCRIPT, COSMIC],
+# inflate_mutations_to_remove_TC_NER_effect affect genic versus intergenic results.
+# therefore, inflate_mutations_to_remove_TC_NER_effect normally must be False.
+def main(input_dir,
+         output_dir,
+         discreet_mode = True, # affect the plot of real mutations in figures_cosmic
+         figure_types = [MANUSCRIPT, COSMIC],
          significance_level = 0.05,
          cosmic_release_version = 'v3.2',
          figure_file_extension = 'jpg',
          min_required_number_of_mutations_on_strands = 1000,
          min_required_percentage_of_mutations_on_strands = 5,
          number_of_required_mutations_for_stacked_bar_plot = 1,
-         inflate_mutations_to_remove_TC_NER_effect = True,
-         consider_only_significant_results = True,
-         consider_also_DBS_ID_signatures = True,
-         fold_enrichment = ODDS_RATIO):
-
-    # INPUT DIRECTORY
-    # Real and simulations signals are here
-    combined_output_dir = os.path.join('/restricted', 'alexandrov-group', 'burcak', 'SigProfilerTopographyRuns','Combined_PCAWG_nonPCAWG_4th_iteration')
-
-    # OUTPUT DIRECTORY under oasis
-    strand_bias_output_dir = os.path.join('/oasis', 'tscc', 'scratch', 'burcak', 'SigProfilerTopographyRuns',
-                                          'combined_pcawg_and_nonpcawg_figures_pdfs',
-                                          '4th_iteration',
-                                          'strand_bias')
+         inflate_mutations_to_remove_TC_NER_effect = False, # For manuscript and cosmic figures it must be False. Only for Figure S1 Panel E, it must be True
+         consider_only_significant_results = False, # only affects the histogram under strand_bias directory
+         consider_also_DBS_ID_signatures = True, # only affects the histogram under strand_bias directory
+         fold_enrichment = ODDS_RATIO,
+         round_mode = False):
 
     # CANCER TYPES
     # These are the 40 tissues for combined PCAWG and nonPCAWG + ESCC
@@ -411,7 +360,7 @@ def main(figure_types = [MANUSCRIPT, COSMIC],
                      'ID14', 'ID15', 'ID16', 'ID17']
 
     # # For testing and debugging
-    # sbs_signatures = ['SBS1', 'SBS37'] # empty list is valid
+    # sbs_signatures = ['SBS85'] # empty list is valid
     # dbs_signatures = [] # empty list is valid
     # id_signatures = [] # empty list is valid
 
@@ -433,7 +382,7 @@ def main(figure_types = [MANUSCRIPT, COSMIC],
     # percentage_numbers = [5, 10, 20, 50, 75, 100]
     percentage_strings = ['%d'%(percentage_number) + '%' for percentage_number in percentage_numbers]
 
-    signature2cancer_type_list_dict = get_signature2cancer_type_list_dict(combined_output_dir,cancer_types)
+    signature2cancer_type_list_dict = get_signature2cancer_type_list_dict(input_dir,cancer_types)
     print('signature2cancer_type_list_dict: ', signature2cancer_type_list_dict)
 
     cancer_type2source_cancer_type_tuples_dict = {
@@ -478,12 +427,12 @@ def main(figure_types = [MANUSCRIPT, COSMIC],
         'SoftTissue-Liposarc' : [(PCAWG, 'SoftTissue-Liposarc'), (nonPCAWG, 'Sarcoma')],
         'Thy-AdenoCA' : [(PCAWG, 'Thy-AdenoCA')]}
 
-    plot_strand_bias_figures(combined_output_dir,
+    plot_strand_bias_figures(input_dir,
                              cancer_types,
                              sbs_signatures,
                              dbs_signatures,
                              id_signatures,
-                             strand_bias_output_dir,
+                             output_dir,
                              strand_biases,
                              percentage_numbers,
                              percentage_strings,
@@ -499,7 +448,9 @@ def main(figure_types = [MANUSCRIPT, COSMIC],
                              inflate_mutations_to_remove_TC_NER_effect,
                              consider_only_significant_results,
                              consider_also_DBS_ID_signatures,
-                             fold_enrichment)
+                             fold_enrichment,
+                             round_mode,
+                             discreet_mode)
 
 
 def write_my_type_dictionaries_as_dataframes(type2strand2percent2cancertypeslist_dict,signature2cancer_type_list_dict,percentage_strings,filepath):
@@ -768,14 +719,12 @@ def plot_histogram_of_fold_enrichment_in_intergenic_regions(strand_bias_output_d
     ax.tick_params(axis="x", labelsize=20)
     ax.tick_params(axis="y", labelsize=20)
 
-    ax.set_ylabel('Frequency', fontsize=40)
-    ax.set_xlabel('Fold enrichment in intergenic regions', fontsize=40)
+    ax.set_ylabel('Frequency', fontsize = 35)
+    ax.set_xlabel('Fold enrichment in intergenic regions', fontsize = 35)
     if inflate_mutations_to_remove_TC_NER_effect:
-        ax.set_title('Inflated Mutations on Genic Regions', fontsize=40)
-        # ax.set_title('Corrected Number of Mutations on Genic Regions', fontsize=40)
+        ax.set_title('Inflated Somatic Mutations in Genic Regions', fontsize = 35)
     else:
-        ax.set_title('No Inflated Mutations on Genic Regions',fontsize=40)
-        # ax.set_title('No Correction on Genic Regions', fontsize=40)
+        ax.set_title('Original Somatic Mutations',fontsize = 35)
 
     number_of_fold_enrichment = z.shape[0]
     mean = np.mean(z)
@@ -833,7 +782,7 @@ def func_part1(df_list,
 # Add Significant Strand
 # Set Significant Strands
 # Set Percentages
-# Set Fold Enrichment
+# Set Fold Enrichment based on Odds ratio
 def func_part2(df,
                name1_vs_name2_q_value,
                df_versus_type,
@@ -848,6 +797,7 @@ def func_part2(df,
                column1_sims_mean_name,
                column2_sims_mean_name,
                fold_enrichment,
+               round_mode,
                column3_real_name = None):
 
     if df is not None:
@@ -906,7 +856,7 @@ def func_part2(df,
         df.loc[(df[column1_real_name] > df[column2_real_name]), SIGNIFICANT_STRAND] = strand1_name
         df.loc[(df[column2_real_name] > df[column1_real_name]), SIGNIFICANT_STRAND] = strand2_name
 
-        # For TC-NER analysis
+        # These columns are added for TC-NER analysis
         # Set Fold Enrichment
         # real_ratio = intergenic_real / genic_real # numerator/denominator order is preset
         # sim_ratio = intergenic_sim / genic_sim # numerator/denominator order is preset
@@ -936,13 +886,20 @@ def func_part2(df,
             df.loc[((df[column2_real_name] > df[column1_real_name]) & (df[column1_sims_mean_name] > 0)), FC_SIMS] = df[column2_sims_mean_name] / df[column1_sims_mean_name]
 
             # Same for both cases
-            df.loc[ (df[FC_SIMS] > 0), FC] = df[FC_REAL] / df[FC_SIMS]
+            if round_mode:
+                # with rounding
+                df.loc[ (df[FC_SIMS] > 0), FC] = df[FC_REAL].round(2) / df[FC_SIMS].round(2)
+                df.loc[(df[FC_SIMS] > 0), FC] = df[FC].round(2)
+            else:
+                # wo rounding
+                df.loc[ (df[FC_SIMS] > 0), FC] = df[FC_REAL] / df[FC_SIMS]
 
             for percentage_index, percentage_number in enumerate(percentage_numbers, 0):
                 percentage_string = percentage_strings[percentage_index]
                 # Set percentages for signature mutation_type
                 fold_change = (percentage_number + 100)/100
-                df.loc[ (df[FC] >= fold_change), percentage_string] = 1
+                # 1.29 FC must fullfill 30%
+                df.loc[ (df[FC].round(2) >= fold_change), percentage_string] = 1
 
 
 # Apply constraints
@@ -998,7 +955,8 @@ def fill_strand_bias_dfs(combined_output_dir,
                         inflate_mutations_to_remove_TC_NER_effect,
                         consider_only_significant_results,
                         consider_also_DBS_ID_signatures,
-                        fold_enrichment):
+                        fold_enrichment,
+                        round_mode):
 
     # Step1 Combine strand bias dataframes with already computed p_values coming from each project and cancer type
     signature_transcribed_versus_untranscribed_df_list = []
@@ -1224,6 +1182,7 @@ def fill_strand_bias_dfs(combined_output_dir,
                    TRANSCRIBED_SIMS_MEAN_COUNT,
                    UNTRANSCRIBED_SIMS_MEAN_COUNT,
                    fold_enrichment,
+                   round_mode,
                    column3_real_name = NONTRANSCRIBED_REAL_COUNT)
 
         func_part2(signature_genic_versus_intergenic_df,
@@ -1239,7 +1198,8 @@ def fill_strand_bias_dfs(combined_output_dir,
                    INTERGENIC_REAL_COUNT,
                    GENIC_SIMS_MEAN_COUNT,
                    INTERGENIC_SIMS_MEAN_COUNT,
-                   fold_enrichment)
+                   fold_enrichment,
+                   round_mode)
 
         func_part2(signature_lagging_versus_leading_df,
                    LAGGING_VERSUS_LEADING_Q_VALUE,
@@ -1254,7 +1214,8 @@ def fill_strand_bias_dfs(combined_output_dir,
                    LEADING_REAL_COUNT,
                    LAGGING_SIMS_MEAN_COUNT,
                    LEADING_SIMS_MEAN_COUNT,
-                   fold_enrichment)
+                   fold_enrichment,
+                   round_mode)
 
         func_part2(type_transcribed_versus_untranscribed_df,
                    TRANSCRIBED_VERSUS_UNTRANSCRIBED_Q_VALUE,
@@ -1270,6 +1231,7 @@ def fill_strand_bias_dfs(combined_output_dir,
                    TRANSCRIBED_SIMS_MEAN_COUNT,
                    UNTRANSCRIBED_SIMS_MEAN_COUNT,
                    fold_enrichment,
+                   round_mode,
                    column3_real_name = NONTRANSCRIBED_REAL_COUNT)
 
         func_part2(type_genic_versus_intergenic_df,
@@ -1285,7 +1247,8 @@ def fill_strand_bias_dfs(combined_output_dir,
                    INTERGENIC_REAL_COUNT,
                    GENIC_SIMS_MEAN_COUNT,
                    INTERGENIC_SIMS_MEAN_COUNT,
-                   fold_enrichment)
+                   fold_enrichment,
+                   round_mode)
 
         func_part2(type_lagging_versus_leading_df,
                    LAGGING_VERSUS_LEADING_Q_VALUE,
@@ -1300,7 +1263,8 @@ def fill_strand_bias_dfs(combined_output_dir,
                    LEADING_REAL_COUNT,
                    LAGGING_SIMS_MEAN_COUNT,
                    LEADING_SIMS_MEAN_COUNT,
-                   fold_enrichment)
+                   fold_enrichment,
+                   round_mode)
 
         # For TC-NER analysis
         # plot histogram of the fold enrichment in intergenic regions
@@ -1437,7 +1401,7 @@ def fill_strand_bias_dfs(combined_output_dir,
            type_lagging_versus_leading_filtered_q_value_df
 
 # Call this method for strand bias figures wih percentages and circles.
-def plot_strand_bias_figures(combined_output_dir,
+def plot_strand_bias_figures(input_dir,
                             cancer_types,
                             sbs_signatures,
                             dbs_signatures,
@@ -1459,6 +1423,8 @@ def plot_strand_bias_figures(combined_output_dir,
                             consider_only_significant_results,
                             consider_also_DBS_ID_signatures,
                             fold_enrichment,
+                            round_mode,
+                            discreet_mode,
                             figure_case_study = None):
 
     deleteOldData(strand_bias_output_dir)
@@ -1487,7 +1453,7 @@ def plot_strand_bias_figures(combined_output_dir,
     type_genic_versus_intergenic_df,\
     type_genic_versus_intergenic_filtered_q_value_df, \
     type_lagging_versus_leading_df,\
-    type_lagging_versus_leading_filtered_q_value_df = fill_strand_bias_dfs(combined_output_dir,
+    type_lagging_versus_leading_filtered_q_value_df = fill_strand_bias_dfs(input_dir,
                                 cancer_types,
                                 strand_biases,
                                 percentage_numbers,
@@ -1501,7 +1467,8 @@ def plot_strand_bias_figures(combined_output_dir,
                                 inflate_mutations_to_remove_TC_NER_effect,
                                 consider_only_significant_results,
                                 consider_also_DBS_ID_signatures,
-                                fold_enrichment)
+                                fold_enrichment,
+                                round_mode)
 
     signature2mutation_type2strand2percent2cancertypeslist_dict, \
     type2strand2percent2cancertypeslist_dict = fill_strand_bias_dictionaries(signature_transcribed_versus_untranscribed_filtered_q_value_df,
@@ -1517,6 +1484,8 @@ def plot_strand_bias_figures(combined_output_dir,
     for signature in signature2cancer_type_list_dict:
         if signature in signature2mutation_type2strand2percent2cancertypeslist_dict:
             new_signature2mutation_type2strand2percent2cancertypeslist_dict[signature] = signature2mutation_type2strand2percent2cancertypeslist_dict[signature]
+
+
 
     # Write these dictionaries as dataframes
     filename = 'Signature_Mutation_Type_Strand_Cancer_Types_Percentages_Table.txt'
@@ -1534,96 +1503,22 @@ def plot_strand_bias_figures(combined_output_dir,
                                                                                        percentage_strings,
                                                                                        filepath)
 
-    # Write tables in excel files starts
-    excel_file_name = '%s_SBS_Signatures_%s.xlsx' %(cosmic_release_version, COSMIC_TRANSCRIPTION_STRAND_BIAS)
-    excel_file_path = os.path.join(strand_bias_output_dir,EXCEL_FILES, excel_file_name)
-    df_list = []
-    sheet_list = []
-    if signature_transcribed_versus_untranscribed_df is not None:
-        df_list.append(signature_transcribed_versus_untranscribed_df)
-        sheet_list.append('p_value_q_value')
-    if signature_transcribed_versus_untranscribed_filtered_q_value_df is not None:
-        df_list.append(signature_transcribed_versus_untranscribed_filtered_q_value_df)
-        sheet_list.append('filtered')
-    if signature_mutation_type_strand_cancer_types_percentages_df is not None:
-        df_list.append(signature_mutation_type_strand_cancer_types_percentages_df)
-        sheet_list.append('all_results')
-    write_excel_file(df_list, sheet_list, excel_file_path)
-
-    excel_file_name = '%s_SBS_Signatures_%s.xlsx' %(cosmic_release_version, COSMIC_REPLICATION_STRAND_BIAS)
-    excel_file_path = os.path.join(strand_bias_output_dir,EXCEL_FILES, excel_file_name)
-    df_list = []
-    sheet_list = []
-    if signature_lagging_versus_leading_df is not None:
-        df_list.append(signature_lagging_versus_leading_df)
-        sheet_list.append('p_value_q_value')
-    if signature_lagging_versus_leading_filtered_q_value_df is not None:
-        df_list.append(signature_lagging_versus_leading_filtered_q_value_df)
-        sheet_list.append('filtered')
-    if signature_mutation_type_strand_cancer_types_percentages_df is not None:
-        df_list.append(signature_mutation_type_strand_cancer_types_percentages_df)
-        sheet_list.append('all_results')
-    write_excel_file(df_list, sheet_list, excel_file_path)
-
-    excel_file_name = '%s_SBS_Signatures_%s.xlsx' %(cosmic_release_version, COSMIC_GENIC_VS_INTERGENIC_BIAS)
-    excel_file_path = os.path.join(strand_bias_output_dir,EXCEL_FILES, excel_file_name)
-    df_list = []
-    sheet_list = []
-    if signature_genic_versus_intergenic_df is not None:
-        df_list.append(signature_genic_versus_intergenic_df)
-        sheet_list.append('p_value_q_value')
-    if signature_genic_versus_intergenic_filtered_q_value_df is not None:
-        df_list.append(signature_genic_versus_intergenic_filtered_q_value_df)
-        sheet_list.append('filtered')
-    if signature_mutation_type_strand_cancer_types_percentages_df is not None:
-        df_list.append(signature_mutation_type_strand_cancer_types_percentages_df)
-        sheet_list.append('all_results')
-    write_excel_file(df_list, sheet_list, excel_file_path)
-
-    excel_file_name = '%s_Type_%s.xlsx' %(cosmic_release_version, COSMIC_TRANSCRIPTION_STRAND_BIAS)
-    excel_file_path = os.path.join(strand_bias_output_dir, EXCEL_FILES, excel_file_name)
-    df_list = []
-    sheet_list = []
-    if type_transcribed_versus_untranscribed_df is not None:
-        df_list.append(type_transcribed_versus_untranscribed_df)
-        sheet_list.append('p_value_q_value')
-    if type_transcribed_versus_untranscribed_filtered_q_value_df is not None:
-        df_list.append(type_transcribed_versus_untranscribed_filtered_q_value_df)
-        sheet_list.append('filtered')
-    if type_strand_cancer_types_percentages_df is not None:
-        df_list.append(type_strand_cancer_types_percentages_df)
-        sheet_list.append('all_results')
-    write_excel_file(df_list, sheet_list, excel_file_path)
-
-    excel_file_name = '%s_Type_%s.xlsx' %(cosmic_release_version, COSMIC_REPLICATION_STRAND_BIAS)
-    excel_file_path = os.path.join(strand_bias_output_dir, EXCEL_FILES, excel_file_name)
-    df_list = []
-    sheet_list = []
-    if type_lagging_versus_leading_df is not None:
-        df_list.append(type_lagging_versus_leading_df)
-        sheet_list.append('p_value_q_value')
-    if type_lagging_versus_leading_filtered_q_value_df is not None:
-        df_list.append(type_lagging_versus_leading_filtered_q_value_df)
-        sheet_list.append('filtered')
-    if type_strand_cancer_types_percentages_df is not None:
-        df_list.append(type_strand_cancer_types_percentages_df)
-        sheet_list.append('all_results')
-    write_excel_file(df_list, sheet_list, excel_file_path)
-
-    excel_file_name = '%s_Type_%s.xlsx' %(cosmic_release_version, COSMIC_GENIC_VS_INTERGENIC_BIAS)
-    excel_file_path = os.path.join(strand_bias_output_dir, EXCEL_FILES, excel_file_name)
-    df_list = []
-    sheet_list = []
-    if type_genic_versus_intergenic_df is not None:
-        df_list.append(type_genic_versus_intergenic_df)
-        sheet_list.append('p_value_q_value')
-    if type_genic_versus_intergenic_filtered_q_value_df is not None:
-        df_list.append(type_genic_versus_intergenic_filtered_q_value_df)
-        sheet_list.append('filtered')
-    if type_strand_cancer_types_percentages_df is not None:
-        df_list.append(type_strand_cancer_types_percentages_df)
-        sheet_list.append('all_results')
-    write_excel_file(df_list, sheet_list, excel_file_path)
+    # Round, Drop, Rename columns
+    signature_transcribed_versus_untranscribed_df, \
+    signature_lagging_versus_leading_df, \
+    signature_genic_versus_intergenic_df, \
+    signature_mutation_type_strand_cancer_types_percentages_df,\
+    type_transcribed_versus_untranscribed_df, \
+    type_lagging_versus_leading_df, \
+    type_genic_versus_intergenic_df, \
+    type_strand_cancer_types_percentages_df = process_dataframes(signature_transcribed_versus_untranscribed_df,
+                    signature_lagging_versus_leading_df,
+                    signature_genic_versus_intergenic_df,
+                    signature_mutation_type_strand_cancer_types_percentages_df,
+                    type_transcribed_versus_untranscribed_df,
+                    type_lagging_versus_leading_df,
+                    type_genic_versus_intergenic_df,
+                    type_strand_cancer_types_percentages_df)
 
     # Step5 Plot strand bias figures
     for figure_type in figure_types:
@@ -1667,7 +1562,8 @@ def plot_strand_bias_figures(combined_output_dir,
                                 percentage_strings,
                                 signature_transcribed_versus_untranscribed_filtered_q_value_df,
                                 signature_genic_versus_intergenic_filtered_q_value_df,
-                                signature_lagging_versus_leading_filtered_q_value_df)
+                                signature_lagging_versus_leading_filtered_q_value_df,
+                                signature_mutation_type_strand_cancer_types_percentages_df)
 
                 plot_new_dbs_and_id_signatures_figures(DBS,
                                                    dbs_signatures,
@@ -1693,41 +1589,7 @@ def plot_strand_bias_figures(combined_output_dir,
                                                     signature2cancer_type_list_dict,
                                                     percentage_strings)
 
-                # Old version - not squeezed
-                # For each mutation_type e.g.: C>A there are six fold changes [1.1, 1.2, 1.3, 1.5. 1.75. 2+]
-                # plot_six_mutations_sbs_signatures_circle_figures(sbs_signatures,
-                #                                 strand_bias,
-                #                                 strand_bias_output_dir,
-                #                                 significance_level,
-                #                                 signature2mutation_type2strand2percent2cancertypeslist_dict,
-                #                                 signature2cancer_type_list_dict,
-                #                                 percentage_strings)
 
-                # Old version
-                # plot_dbs_and_id_signatures_figures(DBS,
-                #                                    dbs_signatures,
-                #                                    strand_bias,
-                #                                    strand_bias_output_dir,
-                #                                    significance_level,
-                #                                    type2strand2percent2cancertypeslist_dict,
-                #                                    signature2cancer_type_list_dict,
-                #                                    percentage_strings,
-                #                                    figure_type,
-                #                                    cosmic_release_version,
-                #                                    figure_file_extension)
-
-                # Old version
-                # plot_dbs_and_id_signatures_figures(ID,
-                #                                    id_signatures,
-                #                                    strand_bias,
-                #                                    strand_bias_output_dir,
-                #                                    significance_level,
-                #                                    type2strand2percent2cancertypeslist_dict,
-                #                                    signature2cancer_type_list_dict,
-                #                                    percentage_strings,
-                #                                    figure_type,
-                #                                    cosmic_release_version,
-                #                                    figure_file_extension)
 
         elif figure_type == COSMIC:
             for strand_bias in [TRANSCRIBED_VERSUS_UNTRANSCRIBED, GENIC_VERSUS_INTERGENIC, LAGGING_VERSUS_LEADING]:
@@ -1760,7 +1622,8 @@ def plot_strand_bias_figures(combined_output_dir,
                 for signature_tuple in signature_tuples:
                     signature, signature_type = signature_tuple
                     pool.apply_async(plot_cosmic_strand_bias_figure_in_parallel,
-                                     args=(signature,
+                                     args=(input_dir,
+                                           signature,
                                            signature_type,
                                            signature2cancer_type_list_dict,
                                            strand_bias,
@@ -1769,16 +1632,19 @@ def plot_strand_bias_figures(combined_output_dir,
                                            signature_transcribed_versus_untranscribed_df,
                                            signature_genic_versus_intergenic_df,
                                            signature_lagging_versus_leading_df,
+                                           type_transcribed_versus_untranscribed_df,
+                                           type_genic_versus_intergenic_df,
+                                           type_lagging_versus_leading_df,
                                            signature_mutation_type_strand_cancer_types_percentages_df,
+                                           type_strand_cancer_types_percentages_df,
                                            signature2mutation_type2strand2percent2cancertypeslist_dict,
                                            type2strand2percent2cancertypeslist_dict,
                                            cancer_type2source_cancer_type_tuples_dict,
                                            percentage_strings,
                                            significance_level,
-                                           number_of_required_mutations_for_stacked_bar_plot,
-                                           figure_type,
                                            cosmic_release_version,
                                            figure_file_extension,
+                                           discreet_mode,
                                            figure_case_study,
                                            ),
                                      )
@@ -1787,11 +1653,12 @@ def plot_strand_bias_figures(combined_output_dir,
                 pool.join()
                 # Parallel Version ends
 
-                # # Sequential Version
+                # # Sequential Version for testing and debugging
                 # for signature_tuple in signature_tuples:
                 #     signature, signature_type = signature_tuple
                 #     if (signature in signature2cancer_type_list_dict) and (len(signature2cancer_type_list_dict[signature]) > 0):
-                #         plot_cosmic_strand_bias_figure_in_parallel(signature,
+                #         plot_cosmic_strand_bias_figure_in_parallel(input_dir,
+                #                                            signature,
                 #                                            signature_type,
                 #                                            signature2cancer_type_list_dict,
                 #                                            strand_bias,
@@ -1806,58 +1673,131 @@ def plot_strand_bias_figures(combined_output_dir,
                 #                                            cancer_type2source_cancer_type_tuples_dict,
                 #                                            percentage_strings,
                 #                                            significance_level,
-                #                                            number_of_required_mutations_for_stacked_bar_plot,
-                #                                            figure_type,
                 #                                            cosmic_release_version,
                 #                                            figure_file_extension,
+                #                                            discreet_mode,
                 #                                            figure_case_study)
 
 
 
-def any_bias_to_show(signature, strand_bias,type2strand2percent2cancertypeslist_dict):
-    all_cancer_type_list=[]
-
-    if strand_bias==LAGGING_VERSUS_LEADING:
-        strands=replication_strands
-    elif strand_bias==TRANSCRIBED_VERSUS_UNTRANSCRIBED:
-        strands=transcription_strands
-    elif strand_bias==GENIC_VERSUS_INTERGENIC:
-        strands=genic_versus_intergenic_strands
-
-    if signature in type2strand2percent2cancertypeslist_dict:
-        for strand in strands:
-            if strand in type2strand2percent2cancertypeslist_dict[signature]:
-                for percentage in type2strand2percent2cancertypeslist_dict[signature][strand]:
-                    cancer_type_list=type2strand2percent2cancertypeslist_dict[signature][strand][percentage]
-                    all_cancer_type_list.extend(cancer_type_list)
-    return len(all_cancer_type_list)>0
 
 
+    # Round, Drop, Rename columns
+    signature_transcribed_versus_untranscribed_filtered_q_value_df,\
+    signature_lagging_versus_leading_filtered_q_value_df,\
+    signature_genic_versus_intergenic_filtered_q_value_df,\
+    type_transcribed_versus_untranscribed_filtered_q_value_df,\
+    type_lagging_versus_leading_filtered_q_value_df,\
+    type_genic_versus_intergenic_filtered_q_value_df = process_dataframes_filtered(
+                    signature_transcribed_versus_untranscribed_filtered_q_value_df,
+                    signature_lagging_versus_leading_filtered_q_value_df,
+                    signature_genic_versus_intergenic_filtered_q_value_df,
+                    type_transcribed_versus_untranscribed_filtered_q_value_df,
+                    type_lagging_versus_leading_filtered_q_value_df,
+                    type_genic_versus_intergenic_filtered_q_value_df)
 
-def any_bias_to_show_for_six_mutation_types(sbs_signature,strand_bias,signature2mutation_type2strand2percent2cancertypeslist_dict):
-    all_cancer_type_list=[]
 
-    if strand_bias==LAGGING_VERSUS_LEADING:
-        strands=replication_strands
-    elif strand_bias==TRANSCRIBED_VERSUS_UNTRANSCRIBED:
-        strands=transcription_strands
-    elif strand_bias==GENIC_VERSUS_INTERGENIC:
-        strands=genic_versus_intergenic_strands
+    # Write excel files starts
+    # Excel File1 Signatures Mutation Types Transcription Strand Asymmetries
+    excel_file_name = '%s_SBS_Signatures_%s.xlsx' %(cosmic_release_version, COSMIC_TRANSCRIPTION_STRAND_BIAS)
+    excel_file_path = os.path.join(strand_bias_output_dir,EXCEL_FILES, excel_file_name)
+    df_list = []
+    sheet_list = []
+    if signature_transcribed_versus_untranscribed_df is not None:
+        df_list.append(signature_transcribed_versus_untranscribed_df)
+        sheet_list.append('p_value_q_value')
+    if signature_transcribed_versus_untranscribed_filtered_q_value_df is not None:
+        df_list.append(signature_transcribed_versus_untranscribed_filtered_q_value_df)
+        sheet_list.append('filtered')
+    if signature_mutation_type_strand_cancer_types_percentages_df is not None:
+        df_list.append(signature_mutation_type_strand_cancer_types_percentages_df)
+        sheet_list.append('all_results')
+    write_excel_file(df_list, sheet_list, excel_file_path)
 
-    if sbs_signature in signature2mutation_type2strand2percent2cancertypeslist_dict:
-        for mutation_type in signature2mutation_type2strand2percent2cancertypeslist_dict[sbs_signature]:
-            for strand in strands:
-                if strand in signature2mutation_type2strand2percent2cancertypeslist_dict[sbs_signature][mutation_type]:
-                    for percentage in signature2mutation_type2strand2percent2cancertypeslist_dict[sbs_signature][mutation_type][strand]:
-                        cancer_type_list=signature2mutation_type2strand2percent2cancertypeslist_dict[sbs_signature][mutation_type][strand][percentage]
-                        all_cancer_type_list.extend(cancer_type_list)
+    # Excel File2 Signatures Mutation Types Replication Strand Asymmetries
+    excel_file_name = '%s_SBS_Signatures_%s.xlsx' %(cosmic_release_version, COSMIC_REPLICATION_STRAND_BIAS)
+    excel_file_path = os.path.join(strand_bias_output_dir,EXCEL_FILES, excel_file_name)
+    df_list = []
+    sheet_list = []
+    if signature_lagging_versus_leading_df is not None:
+        df_list.append(signature_lagging_versus_leading_df)
+        sheet_list.append('p_value_q_value')
+    if signature_lagging_versus_leading_filtered_q_value_df is not None:
+        df_list.append(signature_lagging_versus_leading_filtered_q_value_df)
+        sheet_list.append('filtered')
+    if signature_mutation_type_strand_cancer_types_percentages_df is not None:
+        df_list.append(signature_mutation_type_strand_cancer_types_percentages_df)
+        sheet_list.append('all_results')
+    write_excel_file(df_list, sheet_list, excel_file_path)
 
-    return len(all_cancer_type_list)>0
+    # Excel File3 SBS Signatures Mutation Types Genic vs Intergenic
+    excel_file_name = '%s_SBS_Signatures_%s.xlsx' %(cosmic_release_version, COSMIC_GENIC_VS_INTERGENIC_BIAS)
+    excel_file_path = os.path.join(strand_bias_output_dir,EXCEL_FILES, excel_file_name)
+    df_list = []
+    sheet_list = []
+    if signature_genic_versus_intergenic_df is not None:
+        df_list.append(signature_genic_versus_intergenic_df)
+        sheet_list.append('p_value_q_value')
+    if signature_genic_versus_intergenic_filtered_q_value_df is not None:
+        df_list.append(signature_genic_versus_intergenic_filtered_q_value_df)
+        sheet_list.append('filtered')
+    if signature_mutation_type_strand_cancer_types_percentages_df is not None:
+        df_list.append(signature_mutation_type_strand_cancer_types_percentages_df)
+        sheet_list.append('all_results')
+    write_excel_file(df_list, sheet_list, excel_file_path)
+
+    # Excel File4 Type Transcription Strand Asymmetries
+    excel_file_name = '%s_Type_%s.xlsx' %(cosmic_release_version, COSMIC_TRANSCRIPTION_STRAND_BIAS)
+    excel_file_path = os.path.join(strand_bias_output_dir, EXCEL_FILES, excel_file_name)
+    df_list = []
+    sheet_list = []
+    if type_transcribed_versus_untranscribed_df is not None:
+        df_list.append(type_transcribed_versus_untranscribed_df)
+        sheet_list.append('p_value_q_value')
+    if type_transcribed_versus_untranscribed_filtered_q_value_df is not None:
+        df_list.append(type_transcribed_versus_untranscribed_filtered_q_value_df)
+        sheet_list.append('filtered')
+    if type_strand_cancer_types_percentages_df is not None:
+        df_list.append(type_strand_cancer_types_percentages_df)
+        sheet_list.append('all_results')
+    write_excel_file(df_list, sheet_list, excel_file_path)
+
+    # Excel File5 Type Replication Strand Asymmetries
+    excel_file_name = '%s_Type_%s.xlsx' %(cosmic_release_version, COSMIC_REPLICATION_STRAND_BIAS)
+    excel_file_path = os.path.join(strand_bias_output_dir, EXCEL_FILES, excel_file_name)
+    df_list = []
+    sheet_list = []
+    if type_lagging_versus_leading_df is not None:
+        df_list.append(type_lagging_versus_leading_df)
+        sheet_list.append('p_value_q_value')
+    if type_lagging_versus_leading_filtered_q_value_df is not None:
+        df_list.append(type_lagging_versus_leading_filtered_q_value_df)
+        sheet_list.append('filtered')
+    if type_strand_cancer_types_percentages_df is not None:
+        df_list.append(type_strand_cancer_types_percentages_df)
+        sheet_list.append('all_results')
+    write_excel_file(df_list, sheet_list, excel_file_path)
+
+    # Excel File6 Type Genic vs Intergenic
+    excel_file_name = '%s_Type_%s.xlsx' %(cosmic_release_version, COSMIC_GENIC_VS_INTERGENIC_BIAS)
+    excel_file_path = os.path.join(strand_bias_output_dir, EXCEL_FILES, excel_file_name)
+    df_list = []
+    sheet_list = []
+    if type_genic_versus_intergenic_df is not None:
+        df_list.append(type_genic_versus_intergenic_df)
+        sheet_list.append('p_value_q_value')
+    if type_genic_versus_intergenic_filtered_q_value_df is not None:
+        df_list.append(type_genic_versus_intergenic_filtered_q_value_df)
+        sheet_list.append('filtered')
+    if type_strand_cancer_types_percentages_df is not None:
+        df_list.append(type_strand_cancer_types_percentages_df)
+        sheet_list.append('all_results')
+    write_excel_file(df_list, sheet_list, excel_file_path)
 
 
 
 def calculate_radius(percentage_of_cancer_types):
-    if int(percentage_of_cancer_types)==100:
+    if int(percentage_of_cancer_types) == 100:
         radius = (percentage_of_cancer_types / 102) / 2
     else:
         radius = (percentage_of_cancer_types / 100) / 2
@@ -2004,49 +1944,6 @@ def plot_stacked_bar_plot_in_given_axis(axis,
                              axis_given=axis)
 
 
-def plot_bars_legend_in_given_axis(axis, strand_bias):
-    box = axis.get_position()
-    axis.set_position([box.x0 + 0.01, box.y0 + 0.125, box.width * 1, box.height * 1], which='both')
-
-    # Put the legend
-    if strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED:
-        real_strand1_label = "Real %s" %(TRANSCRIBED_STRAND)
-        real_strand2_label = "Real %s" %(UNTRANSCRIBED_STRAND)
-        sims_strand1_label = "Simulated %s" %(TRANSCRIBED_STRAND)
-        sims_strand2_label = "Simulated %s" %(UNTRANSCRIBED_STRAND)
-        strand1_color = 'royalblue'
-        strand2_color = 'yellowgreen'
-    elif strand_bias == GENIC_VERSUS_INTERGENIC:
-        real_strand1_label = "Real %s" %(GENIC)
-        real_strand2_label = "Real %s" %(INTERGENIC)
-        sims_strand1_label = "Simulated %s" %(GENIC)
-        sims_strand2_label = "Simulated %s" %(INTERGENIC)
-        strand1_color = 'cyan'
-        strand2_color = 'gray'
-    elif (strand_bias == LAGGING_VERSUS_LEADING):
-        real_strand1_label = "Real %s" %(LAGGING)
-        real_strand2_label = "Real %s" %(LEADING)
-        sims_strand1_label = "Simulated %s" %(LAGGING)
-        sims_strand2_label = "Simulated %s" %(LEADING)
-        strand1_color = 'indianred'
-        strand2_color = 'goldenrod'
-
-    real_strand1_rectangle = mpatches.Patch(label=real_strand1_label, edgecolor='black', facecolor=strand1_color, lw=3)
-    real_strand2_rectangle = mpatches.Patch(label=real_strand2_label, edgecolor='black', facecolor=strand2_color, lw=3)
-    sims_strand1_rectangle = mpatches.Patch(label=sims_strand1_label, edgecolor='black', facecolor=strand1_color, lw=3, hatch='///')
-    sims_strand2_rectangle = mpatches.Patch(label=sims_strand2_label, edgecolor='black', facecolor=strand2_color, lw=3, hatch='///')
-
-    legend_elements = [
-        real_strand1_rectangle,
-        real_strand2_rectangle,
-        sims_strand1_rectangle,
-        sims_strand2_rectangle
-        ]
-
-    axis.set_axis_off()
-    axis.legend(handles=legend_elements, ncol=1, loc='center left', fontsize=30)
-
-
 def plot_bar_plot_in_given_axis(axis,
                     signature,
                     strand_bias,
@@ -2174,7 +2071,6 @@ def plot_bar_plot_in_given_axis(axis,
     return mutation_type_display
 
 
-
 def plot_legend_in_given_axis(ax, strand_bias):
     # Put the legend
     if strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED:
@@ -2193,7 +2089,7 @@ def plot_legend_in_given_axis(ax, strand_bias):
     ax.set_axis_off()
     # A 2-tuple (x, y) places the corner of the legend specified by loc at x, y.
     # A 4-tuple specifies the bbox (x, y, width, height) that the legend is placed in.
-    ax.legend(handles=legend_elements, ncol=len(legend_elements), bbox_to_anchor=(0, 0, 1, 1), loc='upper right', fontsize=40)  # bbox_to_anchor=(1, 2.75)
+    ax.legend(handles=legend_elements, ncol=len(legend_elements), bbox_to_anchor=(0, 0, 1, 1), loc='upper right', fontsize=40, facecolor='white')  # bbox_to_anchor=(1, 2.75)
     # ax.legend(handles=legend_elements, ncol=len(legend_elements), bbox_to_anchor=(1, 2.75), loc='upper right', fontsize=40) # legacy
 
 def plot_proportion_of_cancer_types_text_in_given_axis(ax):
@@ -2231,22 +2127,18 @@ def plot_proportion_of_cancer_types_text_in_given_axis_new(ax, strand_bias):
             transform=ax.transAxes)
 
 
-def plot_proportion_of_cancer_types_in_given_axis(ax, strand_bias, y0=None, write_text=False):
-    # box = ax.get_position()
-    # if y0 is None:
-    #     # ax.set_position([box.x0, box.y0, box.width, box.height], which='both')  # legacy
-    #     ax.set_position([box.x0, box.y0, 0.5, box.height], which='both')  # legacy
-    #     # ax.set_position([box.x0 - 0.01, box.y0, box.width, box.height], which='both')  # legacy
-    #     # ax.set_position([box.x0 - 0.05, box.y0, box.width, box.height], which='both')  # legacy
-    # else:
-    #     ax.set_position([box.x0 - 0.03, y0, box.width, box.height], which='both')
+def plot_proportion_of_cancer_types_in_given_axis(ax, strand_bias, shift_to_the_right=False, write_text=False):
+    box = ax.get_position()
+    if shift_to_the_right:
+        ax.set_position([box.x0 + 0.01, box.y0, box.width, box.height], which='both')  # legacy
+
     diameter_labels = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     diameter_ticklabels = [0.1, '', '', '', 0.5, '', '', '', '', 1.0]
 
     row_labels = ['circle']
     ax.grid(which="major", color="w", linestyle='-', linewidth=3) # original
 
-    #Make the borders white
+    # Make the borders white
     plt.setp(ax.spines.values(), color='white')
 
     # make aspect ratio square
@@ -2502,7 +2394,8 @@ def plot_new_dbs_and_id_signatures_figures(signature_type,
                                      percentage_string_index,
                                      ax)
 
-    ax.set_title('Fold Change', fontsize=y_ticks_labelsize, pad=20)
+    # ax.set_title('Fold Change', fontsize=y_ticks_labelsize, pad=20)
+    ax.set_title('Odds Ratio', fontsize=y_ticks_labelsize, pad=20)
 
     # CODE GOES HERE TO CENTER X-AXIS LABELS...
     ax.set_xlim([0,len(percentage_strings)])
@@ -2582,369 +2475,6 @@ def plot_new_dbs_and_id_signatures_figures(signature_type,
     filename = '%s_Signatures_%s_with_circles_%s.png' % (signature_type, strand_bias, str(significance_level).replace('.','_'))
 
     figFile = os.path.join(strand_bias_output_dir, figure_dir, filename)
-    fig.savefig(figFile, dpi=100, bbox_inches="tight")
-
-    plt.cla()
-    plt.close(fig)
-
-
-# Not used any more
-# Formerly used by COSMIC and MANUSCRIPT
-# Across all tissues or tissue based separately
-def plot_dbs_and_id_signatures_figures(signature_type,
-                                       signatures,
-                                       strand_bias,
-                                       strand_bias_figures_output_dir,
-                                       SIGNIFICANCE_LEVEL,
-                                       type2strand2percent2cancertypeslist_dict,
-                                       signature2cancer_type_list_dict,
-                                       percentage_strings,
-                                       figure_type,
-                                       cosmic_release_version,
-                                       figure_file_extension,
-                                       signature_name = None,
-                                       tissue_based = None):
-
-    if figure_type == MANUSCRIPT:
-        x_ticks_labelsize = 35
-        y_ticks_labelsize = 45
-        figure_dir = FIGURES_MANUSCRIPT
-    elif figure_type == COSMIC:
-        x_ticks_labelsize = 35
-        y_ticks_labelsize = 40
-        if tissue_based:
-            figure_dir = COSMIC_TISSUE_BASED_FIGURES
-        else:
-            figure_dir = FIGURES_COSMIC
-
-    rows_signatures=[]
-
-    if strand_bias==LAGGING_VERSUS_LEADING:
-        strands=replication_strands
-    elif strand_bias==TRANSCRIBED_VERSUS_UNTRANSCRIBED:
-        strands=transcription_strands
-    elif strand_bias==GENIC_VERSUS_INTERGENIC:
-        strands=genic_versus_intergenic_strands
-
-    # Fill rows_DBS_signatures
-    # Fill rows_ID_signatures
-    for signature in signatures:
-        if signature  in type2strand2percent2cancertypeslist_dict:
-            for strand in strands:
-                if strand in type2strand2percent2cancertypeslist_dict[signature]:
-                    for percentage_string in type2strand2percent2cancertypeslist_dict[signature][strand]:
-                        if len(type2strand2percent2cancertypeslist_dict[signature][strand][percentage_string])>0:
-                            if signature not in rows_signatures:
-                                rows_signatures.append(signature)
-
-    # No DBS and ID mutational signatures attributed to artifacts
-    signatures_attributed_to_artifacts = []
-    rows_signatures = list(set(rows_signatures) - set(signatures_attributed_to_artifacts))
-
-    rows_signatures = sorted(rows_signatures, key=natural_key, reverse=True)
-
-    #This is for COSMIC
-    if len(rows_signatures)==0 and signature_name:
-        rows_signatures.append(signature)
-
-    if tissue_based:
-        # No need for number of cancer types having this signature
-        rows_signatures_with_number_of_cancer_types = rows_signatures
-    else:
-        rows_signatures_with_number_of_cancer_types = augment_with_number_of_cancer_types(signature_type, rows_signatures, signature2cancer_type_list_dict)
-
-    # Plot (width,height)
-    if signature_name:
-        # COSMIC
-        fig = plt.figure(figsize=(5 + 1.5 * 3 * len(percentage_strings), 5 + 1.5 * len(rows_signatures)))
-        gs = gridspec.GridSpec(2, 3, width_ratios=[1, 1, 1], height_ratios=[1, 1])
-        ax = plt.subplot(gs[0, :]) #yop_axis
-        bottom_left_axis = plt.subplot(gs[-1, 0])
-        bottom_right_axis = plt.subplot(gs[-1, -1])
-        plot_proportion_of_cancer_types_in_given_axis(bottom_left_axis, bottom_left_axis.get_position().y0, write_text=True)
-    else:
-        # MANUSCRIPT
-        fig, ax = plt.subplots(figsize=(5 + 1.75*len(percentage_strings), 5 + len(rows_signatures))) # +5 is to avoid ValueError when there is no signature to show
-        # fig, ax = plt.subplots(figsize=(5 + 1.75*len(percentage_strings), len(rows_signatures)))
-
-    # Make aspect ratio square
-    ax.set_aspect(1.0)
-
-    # Set title
-    if figure_type==MANUSCRIPT:
-        if strand_bias == LAGGING_VERSUS_LEADING:
-            title = 'Lagging versus Leading Strand Bias'
-        elif strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED:
-            title = 'Transcribed versus Untranscribed Strand Bias'
-        elif strand_bias == GENIC_VERSUS_INTERGENIC:
-            title = 'Genic versus Intergenic Regions Bias'
-    elif figure_type==COSMIC:
-        if tissue_based:
-            title = tissue_based
-        else:
-            if strand_bias == LAGGING_VERSUS_LEADING:
-                title = '%s Lagging versus Leading Strand Bias' %(signatures[0])
-            elif strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED:
-                title = '%s Transcribed versus Untranscribed Strand Bias' %(signatures[0])
-            elif strand_bias == GENIC_VERSUS_INTERGENIC:
-                title = '%s Genic versus Intergenic Regions Bias' %(signatures[0])
-
-    if figure_type==COSMIC:
-        ax.text(len(percentage_strings)/2, len(rows_signatures)+1, title, horizontalalignment='center', fontsize=60, fontweight='bold', fontname='Arial')
-
-    for percentage_diff_index, percentage_string in enumerate(percentage_strings):
-        for row_signature_index, row_signature in enumerate(rows_signatures):
-            if (strand_bias == LAGGING_VERSUS_LEADING):
-                if row_signature in type2strand2percent2cancertypeslist_dict:
-                    lagging_cancer_types_percentage = None
-                    leading_cancer_types_percentage = None
-                    if LAGGING in type2strand2percent2cancertypeslist_dict[row_signature]:
-                        cancer_types_list = type2strand2percent2cancertypeslist_dict[row_signature][LAGGING][percentage_string]
-                        all_cancer_types_list = signature2cancer_type_list_dict[row_signature]
-                        if tissue_based and (tissue_based in cancer_types_list):
-                            lagging_cancer_types_percentage = 100
-                        elif not tissue_based:
-                            lagging_cancer_types_percentage = (len(cancer_types_list) / len(all_cancer_types_list)) * 100
-                    if LEADING in type2strand2percent2cancertypeslist_dict[row_signature]:
-                        cancer_types_list=type2strand2percent2cancertypeslist_dict[row_signature][LEADING][percentage_string]
-                        all_cancer_types_list = signature2cancer_type_list_dict[row_signature]
-                        if tissue_based and (tissue_based in cancer_types_list):
-                            leading_cancer_types_percentage = 100
-                        elif not tissue_based:
-                            leading_cancer_types_percentage = (len(cancer_types_list) / len(all_cancer_types_list)) * 100
-                    if (lagging_cancer_types_percentage is not None) and (leading_cancer_types_percentage is None):
-                        radius = calculate_radius(lagging_cancer_types_percentage)
-                        if (radius > 0):
-                            print('Plot circle at x=%d y=%d for %s %s' % (percentage_diff_index, row_signature_index, row_signature,percentage_string))
-                            circle = plt.Circle((percentage_diff_index + 0.5, row_signature_index + 0.5), radius, color='indianred', fill=True)
-                            ax.add_artist(circle)
-                    elif (leading_cancer_types_percentage is not None) and (lagging_cancer_types_percentage is None):
-                        radius = calculate_radius(leading_cancer_types_percentage)
-                        if (radius > 0):
-                            print('Plot circle at x=%d y=%d for %s %s' % (percentage_diff_index, row_signature_index, row_signature,percentage_string))
-                            circle = plt.Circle((percentage_diff_index + 0.5, row_signature_index + 0.5), radius, color='goldenrod', fill=True)
-                            ax.add_artist(circle)
-                    elif (lagging_cancer_types_percentage is not None) and (leading_cancer_types_percentage is not None):
-                        radius_lagging = calculate_radius(lagging_cancer_types_percentage)
-                        radius_leading = calculate_radius(leading_cancer_types_percentage)
-                        if (radius_lagging>radius_leading):
-                            #First lagging
-                            circle = plt.Circle((percentage_diff_index + 0.5, row_signature_index + 0.5), radius_lagging, color='goldenrod', fill=True)
-                            ax.add_artist(circle)
-                            #Second leading
-                            circle = plt.Circle((percentage_diff_index + 0.5, row_signature_index + 0.5), radius_leading, color='goldenrod', fill=True)
-                            ax.add_artist(circle)
-                        else:
-                            #First leading
-                            circle = plt.Circle((percentage_diff_index + 0.5, row_signature_index + 0.5), radius_leading, color='goldenrod', fill=True)
-                            ax.add_artist(circle)
-                            #Second lagging
-                            circle = plt.Circle((percentage_diff_index + 0.5, row_signature_index + 0.5), radius_lagging, color='goldenrod', fill=True)
-                            ax.add_artist(circle)
-
-            elif (strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED):
-                if row_signature in type2strand2percent2cancertypeslist_dict:
-                    transcribed_cancer_types_percentage = None
-                    untranscribed_cancer_types_percentage = None
-                    if TRANSCRIBED_STRAND in type2strand2percent2cancertypeslist_dict[row_signature]:
-                        cancer_types_list = type2strand2percent2cancertypeslist_dict[row_signature][TRANSCRIBED_STRAND][percentage_string]
-                        all_cancer_types_list = signature2cancer_type_list_dict[row_signature]
-                        if tissue_based and (tissue_based in cancer_types_list):
-                            transcribed_cancer_types_percentage = 100
-                        elif not tissue_based:
-                            transcribed_cancer_types_percentage = (len(cancer_types_list) / len(all_cancer_types_list)) * 100
-                    if UNTRANSCRIBED_STRAND in type2strand2percent2cancertypeslist_dict[row_signature]:
-                        cancer_types_list=type2strand2percent2cancertypeslist_dict[row_signature][UNTRANSCRIBED_STRAND][percentage_string]
-                        all_cancer_types_list = signature2cancer_type_list_dict[row_signature]
-                        if tissue_based and (tissue_based in cancer_types_list):
-                            untranscribed_cancer_types_percentage = 100
-                        elif not tissue_based:
-                            untranscribed_cancer_types_percentage = (len(cancer_types_list) / len(all_cancer_types_list)) * 100
-                    if (transcribed_cancer_types_percentage is not None) and (untranscribed_cancer_types_percentage is None):
-                        radius = calculate_radius(transcribed_cancer_types_percentage)
-                        if (radius > 0):
-                            print('Plot circle at x=%d y=%d for %s %s' % (percentage_diff_index, row_signature_index, row_signature,percentage_string))
-                            circle = plt.Circle((percentage_diff_index + 0.5, row_signature_index + 0.5), radius, color='royalblue', fill=True)
-                            ax.add_artist(circle)
-                    elif (untranscribed_cancer_types_percentage is not None) and (transcribed_cancer_types_percentage is None):
-                        radius = calculate_radius(untranscribed_cancer_types_percentage)
-                        if (radius > 0):
-                            print('Plot circle at x=%d y=%d for %s %s' % (percentage_diff_index, row_signature_index, row_signature,percentage_string))
-                            circle = plt.Circle((percentage_diff_index + 0.5, row_signature_index + 0.5), radius, color='yellowgreen', fill=True)
-                            ax.add_artist(circle)
-                    elif (transcribed_cancer_types_percentage is not None) and (untranscribed_cancer_types_percentage is not None):
-                        radius_transcribed = calculate_radius(transcribed_cancer_types_percentage)
-                        radius_untranscribed = calculate_radius(untranscribed_cancer_types_percentage)
-                        if (radius_transcribed>radius_untranscribed):
-                            #First transcribed
-                            circle = plt.Circle((percentage_diff_index + 0.5, row_signature_index + 0.5), radius_transcribed, color='royalblue', fill=True)
-                            ax.add_artist(circle)
-                            #Second untranscribed
-                            circle = plt.Circle((percentage_diff_index + 0.5, row_signature_index + 0.5), radius_untranscribed, color='yellowgreen', fill=True)
-                            ax.add_artist(circle)
-                        else:
-                            #First untranscribed
-                            circle = plt.Circle((percentage_diff_index + 0.5, row_signature_index + 0.5), radius_untranscribed, color='yellowgreen', fill=True)
-                            ax.add_artist(circle)
-                            #Second transcribed
-                            circle = plt.Circle((percentage_diff_index + 0.5, row_signature_index + 0.5), radius_transcribed, color='royalblue', fill=True)
-                            ax.add_artist(circle)
-
-            elif (strand_bias == GENIC_VERSUS_INTERGENIC):
-                if row_signature in type2strand2percent2cancertypeslist_dict:
-                    genic_cancer_types_percentage=None
-                    intergenic_cancer_types_percentage=None
-                    if GENIC in type2strand2percent2cancertypeslist_dict[row_signature]:
-                        cancer_types_list=type2strand2percent2cancertypeslist_dict[row_signature][GENIC][percentage_string]
-                        all_cancer_types_list = signature2cancer_type_list_dict[row_signature]
-                        if tissue_based and (tissue_based in cancer_types_list):
-                            genic_cancer_types_percentage = 100
-                        elif not tissue_based:
-                            genic_cancer_types_percentage = (len(cancer_types_list) / len(all_cancer_types_list)) * 100
-                    if INTERGENIC in type2strand2percent2cancertypeslist_dict[row_signature]:
-                        cancer_types_list=type2strand2percent2cancertypeslist_dict[row_signature][INTERGENIC][percentage_string]
-                        all_cancer_types_list = signature2cancer_type_list_dict[row_signature]
-                        if tissue_based and (tissue_based in cancer_types_list):
-                            intergenic_cancer_types_percentage = 100
-                        elif not tissue_based:
-                            intergenic_cancer_types_percentage = (len(cancer_types_list) / len(all_cancer_types_list)) * 100
-
-                    if (genic_cancer_types_percentage is not None) and (intergenic_cancer_types_percentage is None):
-                        radius = calculate_radius(genic_cancer_types_percentage)
-                        if (radius > 0):
-                            print('Plot circle at x=%d y=%d for %s %s' % (percentage_diff_index, row_signature_index, row_signature,percentage_string))
-                            circle = plt.Circle((percentage_diff_index + 0.5, row_signature_index + 0.5), radius, color='cyan', fill=True)
-                            ax.add_artist(circle)
-                    elif (intergenic_cancer_types_percentage is not None) and (genic_cancer_types_percentage is None):
-                        radius = calculate_radius(intergenic_cancer_types_percentage)
-                        if (radius > 0):
-                            print('Plot circle at x=%d y=%d for %s %s' % (percentage_diff_index, row_signature_index, row_signature,percentage_string))
-                            circle = plt.Circle((percentage_diff_index + 0.5, row_signature_index + 0.5), radius, color='gray', fill=True)
-                            ax.add_artist(circle)
-                    elif (genic_cancer_types_percentage is not None) and (intergenic_cancer_types_percentage is not None):
-                        radius_genic = calculate_radius(genic_cancer_types_percentage)
-                        radius_intergenic = calculate_radius(intergenic_cancer_types_percentage)
-                        if (radius_genic>radius_intergenic):
-                            #First genic
-                            circle = plt.Circle((percentage_diff_index + 0.5, row_signature_index + 0.5), radius_genic, color='cyan', fill=True)
-                            ax.add_artist(circle)
-                            #Second intergenic
-                            circle = plt.Circle((percentage_diff_index + 0.5, row_signature_index + 0.5), radius_intergenic, color='gray', fill=True)
-                            ax.add_artist(circle)
-                        else:
-                            #First untranscribed
-                            circle = plt.Circle((percentage_diff_index + 0.5, row_signature_index + 0.5), radius_intergenic, color='gray', fill=True)
-                            ax.add_artist(circle)
-                            #Second transcribed
-                            circle = plt.Circle((percentage_diff_index + 0.5, row_signature_index + 0.5), radius_genic, color='cyan', fill=True)
-                            ax.add_artist(circle)
-
-    # CODE GOES HERE TO CENTER X-AXIS LABELS...
-    ax.set_xlim([0,len(percentage_strings)])
-    ax.set_xticklabels([])
-    ax.tick_params(axis='x', which='both', length=0, labelsize=x_ticks_labelsize)
-
-    #major ticks
-    ax.set_xticks(np.arange(0, len(percentage_strings), 1))
-    #minor ticks
-    ax.set_xticks(np.arange(0, len(percentage_strings), 1)+0.5,minor=True)
-    # xticklabels_list = ['1.1', '1.2', '1.3', '1.5', '1.75', '2+']
-
-    xticklabels_list=[]
-    for percentage_string in percentage_strings:
-        if percentage_string=='5%':
-            xticklabels_list.append('1.05')
-        elif percentage_string=='10%':
-            xticklabels_list.append('1.1')
-        elif percentage_string=='20%':
-            xticklabels_list.append('1.2')
-        elif percentage_string=='25%':
-            xticklabels_list.append('1.25')
-        elif percentage_string=='30%':
-            xticklabels_list.append('1.3')
-        elif percentage_string=='50%':
-            xticklabels_list.append('1.5')
-        elif percentage_string=='75%':
-            xticklabels_list.append('1.75')
-        elif percentage_string=='100%':
-            xticklabels_list.append('2+')
-
-    ax.set_xticklabels(xticklabels_list, minor=True, fontweight='bold', fontname='Arial', fontsize=x_ticks_labelsize)
-
-    ax.xaxis.set_ticks_position('top')
-
-    plt.tick_params(
-        axis='x',  # changes apply to the x-axis
-        which='both',  # both major and minor ticks are affected
-        bottom=False,  # ticks along the bottom edge are off
-        top=False)  # labels along the bottom edge are off
-
-    # CODE GOES HERE TO CENTER Y-AXIS LABELS...
-    ax.set_ylim([0,len(rows_signatures)])
-    ax.set_yticklabels([])
-    ax.tick_params(axis='y', which='both', length=0, labelsize=y_ticks_labelsize)
-
-    #major ticks
-    ax.set_yticks(np.arange(0, len(rows_signatures), 1))
-    #minor ticks
-    ax.set_yticks(np.arange(0, len(rows_signatures), 1)+0.5,minor=True)
-
-    yticks = np.arange(0,len(rows_signatures_with_number_of_cancer_types))
-    ax.set_yticks(yticks)
-    if figure_type == COSMIC:
-        ax.set_yticklabels(rows_signatures_with_number_of_cancer_types, minor=True, fontweight='bold', fontname='Times New Roman', fontsize=y_ticks_labelsize)  # fontsize
-    elif figure_type == MANUSCRIPT:
-        ax.set_yticklabels(rows_signatures_with_number_of_cancer_types, minor=True, fontsize=y_ticks_labelsize)  # fontsize
-
-    plt.tick_params(
-        axis='y',  # changes apply to the x-axis
-        which='both',  # both major and minor ticks are affected
-        left=False)  # labels along the bottom edge are off
-
-    # Put the legend
-    if strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED:
-        legend_elements = [
-            Line2D([0], [0], marker='o', color='white', label='Genic: Transcribed Strand', markerfacecolor='royalblue', markersize=40),
-            Line2D([0], [0], marker='o', color='white', label='Genic: Untranscribed Strand', markerfacecolor='yellowgreen', markersize=40)]
-    elif strand_bias == GENIC_VERSUS_INTERGENIC:
-        legend_elements = [
-            Line2D([0], [0], marker='o', color='white', label='Genic Regions', markerfacecolor='cyan', markersize=40),
-            Line2D([0], [0], marker='o', color='white', label='Intergenic Regions', markerfacecolor='gray', markersize=40)]
-    elif (strand_bias == LAGGING_VERSUS_LEADING):
-        legend_elements = [
-            Line2D([0], [0], marker='o', color='white', label='Lagging Strand', markerfacecolor='indianred', markersize=40),
-            Line2D([0], [0], marker='o', color='white', label='Leading Strand', markerfacecolor='goldenrod', markersize=40)]
-
-    if signature_name:
-        bottom_right_axis.set_axis_off()
-        # bottom_right_axis.legend(handles=legend_elements, ncol=len(legend_elements), bbox_to_anchor=(1, 0.5), loc='upper right',fontsize=40)
-        bottom_right_axis.legend(handles=legend_elements, ncol=1, bbox_to_anchor=(1, 0.5), loc='upper right', fontsize=40)
-
-    # Gridlines based on major ticks
-    ax.grid(which='major', color='black')
-
-    if strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED:
-        feature_name = 'TRANSCR_ASYM'
-    elif strand_bias == GENIC_VERSUS_INTERGENIC:
-        feature_name = 'GENIC_ASYM'
-    elif strand_bias == LAGGING_VERSUS_LEADING:
-        feature_name = 'REPLIC_ASYM'
-
-    # v3.2_SBS1_REPLIC_ASYM_TA_C34447.jpg
-    if figure_type == COSMIC:
-        if signature_name and tissue_based:
-            # v3.2_SBS1_REPLIC_ASYM_TA_C34447.jpg
-            NCI_Thesaurus_code = cancer_type_2_NCI_Thesaurus_code_dict[tissue_based]
-            filename = '%s_%s_%s_TA_%s.%s' % (cosmic_release_version, signature_name, feature_name, NCI_Thesaurus_code, figure_file_extension)
-        elif signature_name:
-            filename = '%s_%s_%s.%s' % (cosmic_release_version, signature_name, feature_name, figure_file_extension)
-        else:
-            filename = '%s_%s_Signatures_%s.%s' % (cosmic_release_version, signature_type, feature_name, figure_file_extension)
-    elif figure_type == MANUSCRIPT:
-        # for manuscript  signature_name = None and tissue_based = None
-        filename = '%s_Signatures_%s_with_circles_%s.png' % (signature_type, strand_bias, str(SIGNIFICANCE_LEVEL).replace('.','_'))
-
-    figFile = os.path.join(strand_bias_figures_output_dir, figure_dir, filename)
     fig.savefig(figFile, dpi=100, bbox_inches="tight")
 
     plt.cla()
@@ -3077,7 +2607,7 @@ def combine_p_values(strand_bias, signature_strand1_versus_strand2_df):
     for name_index, name in enumerate(name_list, 0):
         signature, mutation_type = name
         q_value = all_FDR_BH_adjusted_p_values[name_index]
-        df.loc[((df['signature']==signature) & (df['mutation_type']==mutation_type)),'q_value']=q_value
+        df.loc[((df['signature']==signature) & (df['mutation_type']==mutation_type)),'q_value'] = q_value
     return df
 
 # Stacked bar plots
@@ -3464,7 +2994,7 @@ def plot_strand_bias_figure_with_bar_plots(strand_bias,
             label = "{:.1f}".format(y_value)
 
             # Create annotation
-            if ((fdr_bh_adjusted_pvalue is not None) and fdr_bh_adjusted_pvalue <= 0.0001):
+            if ((fdr_bh_adjusted_pvalue is not None) and fdr_bh_adjusted_pvalue <= 0.001):
                 ax.annotate(
                     '***',  # Use `label` as label
                     (x_value, y_value),  # Place label at end of the bar
@@ -3474,7 +3004,7 @@ def plot_strand_bias_figure_with_bar_plots(strand_bias,
                     va=va,
                     fontsize=25)  # Vertically align label differently for
 
-            elif ((fdr_bh_adjusted_pvalue is not None) and fdr_bh_adjusted_pvalue <= 0.001):
+            elif ((fdr_bh_adjusted_pvalue is not None) and fdr_bh_adjusted_pvalue <= 0.01):
                 ax.annotate(
                     '**',  # Use `label` as label
                     (x_value, y_value),  # Place label at end of the bar
@@ -3507,7 +3037,7 @@ def plot_strand_bias_figure_with_bar_plots(strand_bias,
 
     return mutation_type_display
 
-# sigProfilerPlotting plotsBS
+# sigProfilerPlotting plotSBS
 # Tissue-based
 # Across all cancer types
 def plot_real_data_strand_bias_in_given_axis(signature,
@@ -3529,6 +3059,11 @@ def plot_real_data_strand_bias_in_given_axis(signature,
     #     title = '%s Genic versus Intergenic Strand Bias' %(signature)
     # panel1.text(6 * 3, 1 + 2.5, title, horizontalalignment='center', fontsize=60, fontweight='bold', fontname='Arial', transform=panel1.transAxes)
     # panel1.text(box.width/2, box.height, title, horizontalalignment='center', fontsize=60, fontweight='bold', fontname='Arial', transform=panel1.transAxes)
+
+    # No grid lines
+    panel1.grid(False)
+
+    panel1.set_facecolor('white')
 
     total_count = 0
     sig_probs = False
@@ -3772,13 +3307,15 @@ def plot_real_data_strand_bias_in_given_axis(signature,
 
 # if tissue_based == None Across all cancer types figure
 # if tissue_based != None Tissue-based figure
-def prepare_df_and_plot_real_data_in_given_axis(real_data_plot_axis,
+def prepare_df_and_plot_real_data_in_given_axis(input_dir,
+                                 real_data_plot_axis,
                                  signature,
                                  signature2cancer_type_list_dict,
                                  cancer_type2source_cancer_type_tuples_dict,
                                  percentage,
                                  plot_type,
                                  strand_bias,
+                                 discreet_mode,
                                  tissue_based=None):
 
     # Return all_df
@@ -3789,13 +3326,13 @@ def prepare_df_and_plot_real_data_in_given_axis(real_data_plot_axis,
     else:
         cancer_type_list = signature2cancer_type_list_dict[signature]
 
-    # What the computations are different for transcription strand bias and replication strand bias?
+    # Why are the computations different for transcription strand bias and replication strand bias?
     # In replication strand bias analysis, SigProfilerTopography provides number of mutations on lagging and leading strands for 96 mutation context.
     # In transcription strand bias analysis, SigProfilerTopography provides number of mutations on transcribed and untranscribed strands only for 6 mutational context.
     # Therefore to get the number of mutations on each transcriptional strand for 96 mutation context, matrix generator and many more former files are used.
     # When SigProfilerTopography provides number of mutations on transcriptional strands for 96 mutational context
     # Then we can get rid of going back to matrix generator, probabilities and cutoff files and compute in the similar way of replicational strand bias.
-    if strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED or strand_bias == GENIC_VERSUS_INTERGENIC:
+    if (strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED) or (strand_bias == GENIC_VERSUS_INTERGENIC):
         # Prepare df
         all_df_list = []
         for global_cancer_type in cancer_type_list:
@@ -3836,7 +3373,8 @@ def prepare_df_and_plot_real_data_in_given_axis(real_data_plot_axis,
                     matrix_mutation_type_short_column = 'MutationTypeShort'
                     prob_sample_column = 'Sample Names'
                     prob_mutation_type_column = 'MutationTypes'
-                    topography_cutoffs_file = os.path.join('/restricted/alexandrov-group/burcak/SigProfilerTopographyRuns/Combined_PCAWG_nonPCAWG_4th_iteration' + '/' + global_cancer_type + '/data/Table_SBS_Signature_Cutoff_NumberofMutations_AverageProbability.txt')
+                    # topography_cutoffs_file = os.path.join('/restricted/alexandrov-group/burcak/SigProfilerTopographyRuns/Combined_PCAWG_nonPCAWG_4th_iteration' + '/' + global_cancer_type + '/data/Table_SBS_Signature_Cutoff_NumberofMutations_AverageProbability.txt')
+                    topography_cutoffs_file = os.path.join(input_dir + '/' + global_cancer_type + '/data/Table_SBS_Signature_Cutoff_NumberofMutations_AverageProbability.txt')
 
                 elif source == nonPCAWG:
                     sbs384_matrix_file = os.path.join('/restricted/alexandrov-group/burcak/data/' + source + '/' + cancer_type + '/output/SBS/' + cancer_type + '.SBS384.all')
@@ -3848,7 +3386,8 @@ def prepare_df_and_plot_real_data_in_given_axis(real_data_plot_axis,
                     matrix_mutation_type_short_column = 'MutationTypeShort'
                     prob_sample_column = 'Sample'
                     prob_mutation_type_column = 'Mutation'
-                    topography_cutoffs_file = os.path.join('/restricted/alexandrov-group/burcak/SigProfilerTopographyRuns/Combined_PCAWG_nonPCAWG_4th_iteration' + '/' + global_cancer_type + '/data/Table_SBS_Signature_Cutoff_NumberofMutations_AverageProbability.txt')
+                    # topography_cutoffs_file = os.path.join('/restricted/alexandrov-group/burcak/SigProfilerTopographyRuns/Combined_PCAWG_nonPCAWG_4th_iteration' + '/' + global_cancer_type + '/data/Table_SBS_Signature_Cutoff_NumberofMutations_AverageProbability.txt')
+                    topography_cutoffs_file = os.path.join(input_dir + '/' + global_cancer_type + '/data/Table_SBS_Signature_Cutoff_NumberofMutations_AverageProbability.txt')
 
                 elif source == MUTOGRAPHS:
                     sbs384_matrix_file = os.path.join('/restricted',  'alexandrov-group',  'burcak', 'data', 'Mutographs_ESCC_552', 'all_samples', 'output',  'SBS', 'All_Samples_552.SBS384.all')
@@ -3857,11 +3396,16 @@ def prepare_df_and_plot_real_data_in_given_axis(real_data_plot_axis,
                     matrix_mutation_type_short_column = 'MutationTypeShort'
                     prob_sample_column = 'Sample Names'
                     prob_mutation_type_column = 'MutationTypes'
-                    topography_cutoffs_file = os.path.join('/restricted/alexandrov-group/burcak/SigProfilerTopographyRuns/Combined_PCAWG_nonPCAWG_4th_iteration' + '/' + global_cancer_type + '/data/Table_SBS_Signature_Cutoff_NumberofMutations_AverageProbability.txt')
+                    # topography_cutoffs_file = os.path.join('/restricted/alexandrov-group/burcak/SigProfilerTopographyRuns/Combined_PCAWG_nonPCAWG_4th_iteration' + '/' + global_cancer_type + '/data/Table_SBS_Signature_Cutoff_NumberofMutations_AverageProbability.txt')
+                    topography_cutoffs_file = os.path.join(input_dir + '/' + global_cancer_type + '/data/Table_SBS_Signature_Cutoff_NumberofMutations_AverageProbability.txt')
+
 
                 matrix_df = pd.read_csv(sbs384_matrix_file, sep='\t')
                 probabilities_df = pd.read_csv(probabilities_file, sep='\t')
                 topography_cutoffs_df = pd.read_csv(topography_cutoffs_file, sep='\t')
+
+                # Some probability cells are na if they are coming from lymphoid samples
+                probabilities_df = probabilities_df.fillna(0)
 
                 print(signature, ' ', source, ' ', cancer_type, sbs384_matrix_file)
                 print(signature, ' ', source, ' ', cancer_type, probabilities_file)
@@ -3876,6 +3420,7 @@ def prepare_df_and_plot_real_data_in_given_axis(real_data_plot_axis,
                 if np.any(topography_cutoffs_df[topography_cutoffs_df['signature'] == signature]['cutoff'].values):
                     cutoff = topography_cutoffs_df[topography_cutoffs_df['signature'] == signature]['cutoff'].values[0]
                 else:
+                    cutoff = None
                     print('Combined_PCAWG_nonPCAWG', global_cancer_type, signature, " No cutoff  is available")
 
                 matrix_df[matrix_mutation_type_short_column] = matrix_df[matrix_mutation_type_column].str[2:]
@@ -3890,18 +3435,21 @@ def prepare_df_and_plot_real_data_in_given_axis(real_data_plot_axis,
                             prob_sample = matrix_sample
                     else:
                         prob_sample = matrix_sample
-                    # sub_prob_df (96, 2) columns [prob_mutation_type_column, signature]
+                    # sub_prob_df must be (96, 2) columns [prob_mutation_type_column, signature]
+                    # some probabilities can be na.
                     sub_prob_df = probabilities_df[(probabilities_df[prob_sample_column] == prob_sample)][[prob_mutation_type_column, signature]]
                     if sub_prob_df.shape[0] > 0:
                         if sub_prob_df.shape[0] == 192:
                             # For Lymph-BNHL or Lymph-CLL Clustered
                             # Same sample can be in kataegis and omikli probabilities files
                             # There can be 96 x 2 = 192 rows in Clustered (kataegis + omikli) probabilities
+                            # Which one to consider? Consider the one with higher sum of probabilities
+                            print('Information', signature,
+                                  'matrix_sample:', matrix_sample, 'prob_sample:', prob_sample,
+                                  'source:', source, 'cancer_type', cancer_type,
+                                  'sub_prob_df.iloc[0:96:,1].sum(axis=0):', sub_prob_df.iloc[0:96:, 1].sum(axis=0),
+                                  'sub_prob_df.iloc[96:,1].sum(axis=0):', sub_prob_df.iloc[96:, 1].sum(axis=0))
                             if (sub_prob_df.iloc[0:96:,1].sum(axis=0) > 0 and sub_prob_df.iloc[96:,1].sum(axis=0) > 0):
-                                print('Information', signature, 'source:', source, 'cancer_type', cancer_type,
-                                      'matrix_sample:', matrix_sample, 'prob_sample:', prob_sample,
-                                      'sub_prob_df.iloc[0:96:,1].sum(axis=0):', sub_prob_df.iloc[0:96:,1].sum(axis=0),
-                                      'sub_prob_df.iloc[96:,1].sum(axis=0):', sub_prob_df.iloc[96:,1].sum(axis=0))
                                 if (sub_prob_df.iloc[0:96:,1].sum(axis=0) >= sub_prob_df.iloc[96:,1].sum(axis=0)):
                                     sub_prob_df = sub_prob_df.iloc[0:96, :]
                                 else:
@@ -3918,15 +3466,28 @@ def prepare_df_and_plot_real_data_in_given_axis(real_data_plot_axis,
                         # sub_matrix_df[384 rows x 3 columns]  [mutation_type, mutation_type_short, matrix_sample]
                         sub_matrix_df = matrix_df[[matrix_mutation_type_column, matrix_mutation_type_short_column, matrix_sample]]
                         merged_df = pd.merge(sub_matrix_df, sub_prob_df, how='inner', left_on=matrix_mutation_type_short_column, right_on=prob_mutation_type_column)
-                        merged_df.loc[(merged_df[signature] < cutoff), prob_sample] = 0
-                        merged_df.loc[(merged_df[signature] >= cutoff), prob_sample] = merged_df[matrix_sample]
+
+                        # We decided to provide prob_mode in the upper panel
+                        merged_df[prob_sample] = merged_df[signature] * merged_df[matrix_sample]
+
+                        # if discreet_mode:
+                        #     merged_df.loc[(merged_df[signature] < cutoff), prob_sample] = 0
+                        #     merged_df.loc[(merged_df[signature] >= cutoff), prob_sample] = merged_df[matrix_sample]
+                        # else:
+                        #     merged_df[prob_sample] = merged_df[signature] * merged_df[matrix_sample]
+                        #     # Do not show the mutations with probability less than cutoff in the figure
+                        #     if cutoff and (not np.isnan(cutoff)):
+                        #         merged_df.loc[(merged_df[signature] < cutoff), prob_sample] = 0
+
                         merged_df = merged_df[[matrix_mutation_type_column, matrix_mutation_type_short_column, prob_sample]]
+
                         merged_df[prob_sample] = merged_df[prob_sample].astype(np.int32)
                         # print(signature, ' ', matrix_sample, ' ', prob_sample, ' ', cutoff, ' ', sub_matrix_df.shape, '\nsub_matrix_df: ', sub_matrix_df)
                         # print(signature, ' ', matrix_sample, ' ', prob_sample, ' ', cutoff, ' ', sub_prob_df.shape  , '\nsub_prob_df: ', sub_prob_df)
                         # print(signature, ' ', matrix_sample, ' ', prob_sample, ' ', cutoff, ' ', merged_df.shape, '\nmerged_df: ', merged_df)
                         print(signature, matrix_sample, prob_sample, cutoff, 'merged_df[prob_sample].sum():', merged_df[prob_sample].sum(), 'merged_df.shape:', merged_df.shape, 'merged_df.columns.values:', merged_df.columns.values)
                         print('merged_df:', merged_df)
+
                         assert merged_df.shape[0] == 384, 'merged_df.shape: ' + merged_df.shape + \
                                                           ' sub_matrix_df.shape: ' + sub_matrix_df.shape + \
                                                           ' sub_prob_df.shape: ' + sub_prob_df.shape +\
@@ -3946,6 +3507,7 @@ def prepare_df_and_plot_real_data_in_given_axis(real_data_plot_axis,
 
 
                 print(signature, ' ', 'len(df_list): ', len(df_list))
+
                 for df in df_list:
                     assert df.shape[0] == 384 ,  df.shape + ' ' + df.columns.values
                     df.set_index([matrix_mutation_type_column], inplace=True)
@@ -3969,6 +3531,7 @@ def prepare_df_and_plot_real_data_in_given_axis(real_data_plot_axis,
                 # df.to_csv(file_path, sep='\t', index=False, header=True)
                 # Decision: I do not add if all zeros. e.g.:  nonPCAWG Liver-HCC
                 number_of_mutations_on_strands = df[column_name].sum()
+
                 if number_of_mutations_on_strands > 0:
                     all_df_list.append(df)
                     # plotSBS(signature + '_' + source + '_' + cancer_type, df, percentage, plot_type, column_name)
@@ -3989,13 +3552,31 @@ def prepare_df_and_plot_real_data_in_given_axis(real_data_plot_axis,
         df_list = []
         for cancer_type in cancer_type_list:
             if (cancer_type == LYMPH_BNHL or cancer_type == LYMPH_CLL) and (signature == 'SBS37' or signature == 'SBS84' or signature == 'SBS85'):
-                # get from clustered
-                df = pd.read_csv(os.path.join('/restricted/alexandrov-group/burcak/SigProfilerTopographyRuns/PCAWG_nonPCAWG_lymphomas/' + cancer_type + '_clustered' + '/data/replication_strand_bias/' + signature + '_replication_strand_bias_real_data.txt'), sep='\t', header=0)
+                # Normal Case: get from clustered
+                # df = pd.read_csv(os.path.join('/restricted/alexandrov-group/burcak/SigProfilerTopographyRuns/PCAWG_nonPCAWG_lymphomas/' + cancer_type + '_clustered' + '/data/replication_strand_bias/' + signature + '_replication_strand_bias_real_data.txt'), sep='\t', header=0)
+
+                # We decided to get from clustered prob_mode
+                df = pd.read_csv(os.path.join('/restricted/alexandrov-group/burcak/SigProfilerTopographyRuns/PCAWG_nonPCAWG_lymphomas/' + cancer_type + '_clustered_prob' + '/data/replication_strand_bias/' + signature + '_replication_strand_bias_real_data.txt'), sep='\t', header=0)
             elif (cancer_type == LYMPH_BNHL or cancer_type == LYMPH_CLL):
-                # get from nonClustered
-                df = pd.read_csv(os.path.join('/restricted/alexandrov-group/burcak/SigProfilerTopographyRuns/PCAWG_nonPCAWG_lymphomas/' + cancer_type + '_nonClustered' + '/data/replication_strand_bias/' + signature + '_replication_strand_bias_real_data.txt'), sep='\t', header=0)
+                # Normal case: get from nonClustered
+                # df = pd.read_csv(os.path.join('/restricted/alexandrov-group/burcak/SigProfilerTopographyRuns/PCAWG_nonPCAWG_lymphomas/' + cancer_type + '_nonClustered' + '/data/replication_strand_bias/' + signature + '_replication_strand_bias_real_data.txt'), sep='\t', header=0)
+
+                # We decided to get from nonClustered prob_mode
+                df = pd.read_csv(os.path.join('/restricted/alexandrov-group/burcak/SigProfilerTopographyRuns/PCAWG_nonPCAWG_lymphomas/' + cancer_type + '_nonClustered_prob' + '/data/replication_strand_bias/' + signature + '_replication_strand_bias_real_data.txt'), sep='\t', header=0)
             else:
-                df = pd.read_csv(os.path.join('/restricted/alexandrov-group/burcak/SigProfilerTopographyRuns/Combined_PCAWG_nonPCAWG_4th_iteration/' + cancer_type + '/data/replication_strand_bias/' + signature + '_replication_strand_bias_real_data.txt'), sep='\t', header=0)
+                # example
+                # df = pd.read_csv(os.path.join('/restricted/alexandrov-group/burcak/SigProfilerTopographyRuns/Combined_PCAWG_nonPCAWG_4th_iteration/' + cancer_type + '/data/replication_strand_bias/' + signature + '_replication_strand_bias_real_data.txt'), sep='\t', header=0)
+
+                # Normal Case
+                # df = pd.read_csv(os.path.join(input_dir + '/' + cancer_type + '/data/replication_strand_bias/' + signature + '_replication_strand_bias_real_data.txt'), sep='\t', header=0)
+
+                # we decided to use prob_mode in the upper panel
+                df = pd.read_csv(os.path.join('/restricted', 'alexandrov-group', 'burcak', 'SigProfilerTopographyRuns',
+                                              'Combined_PCAWG_nonPCAWG_prob_mode' , cancer_type,  'data',
+                                              'replication_strand_bias',
+                                              signature + '_replication_strand_bias_real_data.txt'), sep='\t', header=0)
+
+
             if not df.empty:
                 df_list.append(df)
         merge_column_name = 'MutationType'
@@ -4017,6 +3598,7 @@ def prepare_df_and_plot_real_data_in_given_axis(real_data_plot_axis,
 
     # Use the same method for plotting
     plot_real_data_strand_bias_in_given_axis(signature, all_df, percentage, plot_type, column_name, real_data_plot_axis, strand_bias, tissue_based=tissue_based)
+
     return all_df
 
 
@@ -4198,6 +3780,8 @@ def plot_circles_in_given_axis(ax,
                      signature2cancer_type_list_dict,
                      tissue_based = None):
 
+    ax.set_facecolor('white')
+
     # make aspect ratio square
     ax.set_aspect(1.0)
 
@@ -4283,6 +3867,106 @@ def plot_circles_in_given_axis(ax,
                                            ax)
 
 
+def there_is_a_result_to_show(signature,
+                              strand_bias,
+                              type2strand2percent2cancertypeslist_dict,
+                              signature2cancer_type_list_dict,
+                              percentage_strings):
+
+    signature_tissue_type_tuples, signatures_ylabels_on_the_heatmap = fill_lists(signature,
+                                                                                 signature2cancer_type_list_dict)
+
+    if strand_bias == LAGGING_VERSUS_LEADING:
+        strands = replication_strands
+    elif strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED:
+        strands = transcription_strands
+    elif strand_bias == GENIC_VERSUS_INTERGENIC:
+        strands = genic_versus_intergenic_strands
+
+    strand1 = strands[0] # lagging transcribed genic
+    strand2 = strands[1] # leading untranscribed intergenic
+
+    for percentage_diff_index, percentage_string in enumerate(percentage_strings):
+        for row_signature_index, signature_tissue_tuple in enumerate(signature_tissue_type_tuples):
+            row_signature, tissue_based = signature_tissue_tuple
+            if row_signature in type2strand2percent2cancertypeslist_dict:
+                strand1_cancer_types_percentage = None
+                strand2_cancer_types_percentage = None
+                if strand1 in type2strand2percent2cancertypeslist_dict[row_signature]:
+                    cancer_types_list = type2strand2percent2cancertypeslist_dict[row_signature][strand1][percentage_string]
+                    all_cancer_types_list = signature2cancer_type_list_dict[row_signature]
+                    if tissue_based and (tissue_based in cancer_types_list):
+                        strand1_cancer_types_percentage = 100
+                    elif not tissue_based:
+                        strand1_cancer_types_percentage = (len(cancer_types_list) / len(all_cancer_types_list)) * 100
+                if strand2 in type2strand2percent2cancertypeslist_dict[row_signature]:
+                    cancer_types_list = type2strand2percent2cancertypeslist_dict[row_signature][strand2][percentage_string]
+                    all_cancer_types_list = signature2cancer_type_list_dict[row_signature]
+                    if tissue_based and (tissue_based in cancer_types_list):
+                        strand2_cancer_types_percentage = 100
+                    elif not tissue_based:
+                        strand2_cancer_types_percentage = (len(cancer_types_list) / len(all_cancer_types_list)) * 100
+                if (strand1_cancer_types_percentage is not None and strand1_cancer_types_percentage > 0) or \
+                        (strand2_cancer_types_percentage is not None and strand2_cancer_types_percentage > 0):
+                    return True
+
+    return False
+
+# For DBS and ID signatures
+def write_cosmic_data_file(signature,
+                        strand_bias,
+                        strand_bias_output_dir,
+                        type_transcribed_versus_untranscribed_df,
+                        type_genic_versus_intergenic_df,
+                        type_lagging_versus_leading_df,
+                        type_strand_cancer_types_percentages_df,
+                        cosmic_release_version):
+
+    if strand_bias == LAGGING_VERSUS_LEADING:
+        strands = replication_strands
+    elif strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED:
+        strands = transcription_strands
+    elif strand_bias == GENIC_VERSUS_INTERGENIC:
+        strands = genic_versus_intergenic_strands
+
+    strand1 = strands[0] # lagging transcribed genic
+    strand2 = strands[1] # leading untranscribed intergenic
+
+    if strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED:
+        data_file_name = '%s_%s_%s.txt' % (cosmic_release_version, signature, COSMIC_TRANSCRIPTION_STRAND_BIAS)
+        df = type_transcribed_versus_untranscribed_df
+    elif strand_bias == LAGGING_VERSUS_LEADING:
+        data_file_name = '%s_%s_%s.txt' % (cosmic_release_version, signature, COSMIC_REPLICATION_STRAND_BIAS)
+        df = type_lagging_versus_leading_df
+    elif strand_bias == GENIC_VERSUS_INTERGENIC:
+        data_file_name = '%s_%s_%s.txt' % (cosmic_release_version, signature, COSMIC_GENIC_VS_INTERGENIC_BIAS)
+        df = type_genic_versus_intergenic_df
+
+    data_file_path = os.path.join(strand_bias_output_dir, DATA_FILES, data_file_name)
+
+    # Part1 Cancer Type Specific
+    sub_df = df[df['type'] == signature]
+    with open(data_file_path, 'w') as f:
+        f.write("# Only cancer types with minimum 2000 mutations for SBS signatures and minimum 1000 mutations for DBS and ID signatures with average probability at least 0.75 are considered.\n")
+        f.write("# There must be at least 1000 mutations on the strands.\n")
+        f.write("# Odds ratio between fold change of real mutations and fold change of simulated mutations must be at least 1.1.\n")
+        sub_df.to_csv(f, sep='\t', index=False)
+
+    # Part2 Across All Cancer Types
+    type_circle_plot_df = pd.DataFrame()
+    groupby_df = type_strand_cancer_types_percentages_df.groupby(['type'])
+    if signature in groupby_df.groups:
+        type_circle_plot_df = groupby_df.get_group(signature)
+        type_circle_plot_df = type_circle_plot_df[(type_circle_plot_df['strand'] == strand1) | ((type_circle_plot_df['strand'] == strand2))]
+        # rename column names
+    with open(data_file_path, 'a') as f:
+        f.write("\n")
+        f.write("Summary across all cancer types\n")
+        type_circle_plot_df.to_csv(f, sep='\t', index=False)
+
+
+
+
 # For COSMIC DBS or ID signature across all tissues and tissue  based all together
 def plot_dbs_and_id_signatures_circle_figures_across_all_tissues_and_tissue_based_together(signature_type,
                                        signatures,
@@ -4307,6 +3991,9 @@ def plot_dbs_and_id_signatures_circle_figures_across_all_tissues_and_tissue_base
         ax = plt.gca()
         second_legend_axis = inset_axes(ax, width=15, height=5, loc='upper left', bbox_to_anchor=(0, -0.925, 1, 0.9), bbox_transform=ax.transAxes)  # works to the left, looks better
         plot_proportion_of_cancer_types_in_given_axis(second_legend_axis, strand_bias, write_text=True)
+
+    # set facecolor white
+    ax.set_facecolor('white')
 
     # Make aspect ratio square
     ax.set_aspect(1.0)
@@ -4350,7 +4037,7 @@ def plot_dbs_and_id_signatures_circle_figures_across_all_tissues_and_tissue_base
     ax.set_xticklabels([])
     ax.tick_params(axis='x', which='both', length=0, labelsize=x_ticks_labelsize)
 
-    #major ticks
+    # major ticks
     ax.set_xticks(np.arange(0, len(signatures_ylabels_on_the_heatmap), 1))
     #minor ticks
     ax.set_xticks(np.arange(0, len(signatures_ylabels_on_the_heatmap), 1) + 0.5, minor=True)
@@ -4378,7 +4065,12 @@ def plot_dbs_and_id_signatures_circle_figures_across_all_tissues_and_tissue_base
     yticks = np.arange(0,len(percentage_strings))
     ax.set_yticks(yticks)
     ax.set_yticklabels(yticklabels_list, minor=True, fontsize=y_ticks_labelsize)  # fontsize
-    ax.set_ylabel('Fold\nchange', fontsize=y_ticks_labelsize, rotation=0, labelpad=100)
+
+    # ax.set_ylabel('Fold\nchange', fontsize=y_ticks_labelsize, rotation=0, labelpad=100)
+    odds = "Odds".center(10)
+    ratio = "Ratio".center(10)
+    odds_ratio = "\n".join([odds, ratio])
+    ax.set_ylabel(odds_ratio, fontsize=y_ticks_labelsize, rotation=0, labelpad=100)
 
     plt.tick_params(
         axis='y',  # changes apply to the x-axis
@@ -4399,7 +4091,7 @@ def plot_dbs_and_id_signatures_circle_figures_across_all_tissues_and_tissue_base
             Line2D([0], [0], marker='o', color='white', label='Lagging Strand', markerfacecolor='indianred', markersize=40),
             Line2D([0], [0], marker='o', color='white', label='Leading Strand', markerfacecolor='goldenrod', markersize=40)]
 
-    ax.legend(handles=legend_elements, ncol = 1, loc="upper left", bbox_to_anchor=(0, 0), fontsize=40) # one row
+    ax.legend(handles=legend_elements, ncol = 1, loc="upper left", bbox_to_anchor=(0, 0), fontsize=40, facecolor='white') # one row
 
     # Gridlines based on major ticks
     ax.grid(which='major', color='black')
@@ -4425,34 +4117,419 @@ def plot_dbs_and_id_signatures_circle_figures_across_all_tissues_and_tissue_base
     plt.close(fig)
 
 
-def plot_cosmic_strand_bias_figure_in_parallel(signature,
-                                   signature_type,
-                                   signature2cancer_type_list_dict,
-                                   strand_bias,
-                                   strand_bias_output_dir,
-                                   signature_strand1_versus_strand2_for_bar_plot_df,
-                                   signature_transcribed_versus_untranscribed_df,
-                                   signature_genic_versus_intergenic_df,
-                                   signature_lagging_versus_leading_df,
-                                   signature_mutation_type_strand_cancer_types_percentages_df,
-                                   signature2mutation_type2strand2percent2cancertypeslist_dict,
-                                    type2strand2percent2cancertypeslist_dict,
-                                    cancer_type2source_cancer_type_tuples_dict,
-                                    percentage_strings,
-                                    significance_level,
-                                    number_of_required_mutations_for_stacked_bar_plot,
-                                    figure_type,
-                                    cosmic_release_version,
-                                    figure_file_extension,
-                                    figure_case_study):
+
+def process_dataframes_filtered(signature_transcribed_versus_untranscribed_filtered_q_value_df,
+                                signature_lagging_versus_leading_filtered_q_value_df,
+                                signature_genic_versus_intergenic_filtered_q_value_df,
+                                type_transcribed_versus_untranscribed_filtered_q_value_df,
+                                type_lagging_versus_leading_filtered_q_value_df,
+                                type_genic_versus_intergenic_filtered_q_value_df):
+
+    # signature_transcribed_versus_untranscribed_filtered_q_value_df
+    # round
+    signature_transcribed_versus_untranscribed_filtered_q_value_df['Transcribed_real_count'] = np.around(signature_transcribed_versus_untranscribed_filtered_q_value_df['Transcribed_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_filtered_q_value_df['UnTranscribed_real_count'] = np.around(signature_transcribed_versus_untranscribed_filtered_q_value_df['UnTranscribed_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_filtered_q_value_df['NonTranscribed_real_count'] = np.around(signature_transcribed_versus_untranscribed_filtered_q_value_df['NonTranscribed_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_filtered_q_value_df['Transcribed_mean_sims_count'] = np.around(signature_transcribed_versus_untranscribed_filtered_q_value_df['Transcribed_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_filtered_q_value_df['UnTranscribed_mean_sims_count'] = np.around(signature_transcribed_versus_untranscribed_filtered_q_value_df['UnTranscribed_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_filtered_q_value_df['NonTranscribed_mean_sims_count'] = np.around(signature_transcribed_versus_untranscribed_filtered_q_value_df['NonTranscribed_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_filtered_q_value_df['percentage_of_mutations_on_strands'] = np.around(signature_transcribed_versus_untranscribed_filtered_q_value_df['percentage_of_mutations_on_strands'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_filtered_q_value_df['signature_number_of_mutations_on_strands'] = np.around(signature_transcribed_versus_untranscribed_filtered_q_value_df['signature_number_of_mutations_on_strands'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_filtered_q_value_df['Real_Fold_Enrichment'] = np.around(signature_transcribed_versus_untranscribed_filtered_q_value_df['Real_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_filtered_q_value_df['Sims_Fold_Enrichment'] = np.around(signature_transcribed_versus_untranscribed_filtered_q_value_df['Sims_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_filtered_q_value_df['Fold_Enrichment'] = np.around(signature_transcribed_versus_untranscribed_filtered_q_value_df['Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_filtered_q_value_df['FC_REAL'] = np.around(signature_transcribed_versus_untranscribed_filtered_q_value_df['FC_REAL'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_filtered_q_value_df['FC_SIMS'] = np.around(signature_transcribed_versus_untranscribed_filtered_q_value_df['FC_SIMS'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_filtered_q_value_df['FC'] = np.around(signature_transcribed_versus_untranscribed_filtered_q_value_df['FC'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+
+    # drop columns
+    signature_transcribed_versus_untranscribed_filtered_q_value_df.drop(
+        columns=['Real_Fold_Enrichment', 'Sims_Fold_Enrichment', 'Fold_Enrichment'], inplace=True)
+
+    # rename column names
+    signature_transcribed_versus_untranscribed_filtered_q_value_df.rename(columns={'10%': 'fold_change_1.1',
+                                                                                   '20%': 'fold_change_1.2',
+                                                                                   '30%': 'fold_change_1.3',
+                                                                                   '50%': 'fold_change_1.5',
+                                                                                   '75%': 'fold_change_1.75',
+                                                                                   '100%': 'fold_change_2+'},
+                                                                          inplace=True)
+
+
+    # signature_lagging_versus_leading_filtered_q_value_df
+    # Round
+    signature_lagging_versus_leading_filtered_q_value_df['Lagging_real_count'] = np.around(signature_lagging_versus_leading_filtered_q_value_df['Lagging_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_filtered_q_value_df['Leading_real_count'] = np.around(signature_lagging_versus_leading_filtered_q_value_df['Leading_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_filtered_q_value_df['Lagging_mean_sims_count'] = np.around(signature_lagging_versus_leading_filtered_q_value_df['Lagging_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_filtered_q_value_df['Leading_mean_sims_count'] = np.around(signature_lagging_versus_leading_filtered_q_value_df['Leading_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_filtered_q_value_df['percentage_of_mutations_on_strands'] = np.around(signature_lagging_versus_leading_filtered_q_value_df['percentage_of_mutations_on_strands'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_filtered_q_value_df['signature_number_of_mutations_on_strands'] = np.around(signature_lagging_versus_leading_filtered_q_value_df['signature_number_of_mutations_on_strands'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_filtered_q_value_df['Real_Fold_Enrichment'] = np.around(signature_lagging_versus_leading_filtered_q_value_df['Real_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_filtered_q_value_df['Sims_Fold_Enrichment'] = np.around(signature_lagging_versus_leading_filtered_q_value_df['Sims_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_filtered_q_value_df['Fold_Enrichment'] = np.around(signature_lagging_versus_leading_filtered_q_value_df['Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_filtered_q_value_df['FC_REAL'] = np.around(signature_lagging_versus_leading_filtered_q_value_df['FC_REAL'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_filtered_q_value_df['FC_SIMS'] = np.around(signature_lagging_versus_leading_filtered_q_value_df['FC_SIMS'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_filtered_q_value_df['FC'] = np.around(signature_lagging_versus_leading_filtered_q_value_df['FC'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+
+    # drop columns
+    signature_lagging_versus_leading_filtered_q_value_df.drop(columns=['Real_Fold_Enrichment', 'Sims_Fold_Enrichment', 'Fold_Enrichment'], inplace=True)
+
+    # rename column names
+    signature_lagging_versus_leading_filtered_q_value_df.rename(columns={'10%': 'fold_change_1.1',
+                                                        '20%': 'fold_change_1.2',
+                                                        '30%': 'fold_change_1.3',
+                                                        '50%': 'fold_change_1.5',
+                                                        '75%': 'fold_change_1.75',
+                                                        '100%': 'fold_change_2+'}, inplace=True)
+
+
+    # signature_genic_versus_intergenic_filtered_q_value_df
+    # Round
+    signature_genic_versus_intergenic_filtered_q_value_df['genic_real_count'] = np.around(signature_genic_versus_intergenic_filtered_q_value_df['genic_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_filtered_q_value_df['intergenic_real_count'] = np.around(signature_genic_versus_intergenic_filtered_q_value_df['intergenic_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_filtered_q_value_df['genic_mean_sims_count'] = np.around(signature_genic_versus_intergenic_filtered_q_value_df['genic_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_filtered_q_value_df['intergenic_mean_sims_count'] = np.around(signature_genic_versus_intergenic_filtered_q_value_df['intergenic_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_filtered_q_value_df['percentage_of_mutations_on_strands'] = np.around(signature_genic_versus_intergenic_filtered_q_value_df['percentage_of_mutations_on_strands'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_filtered_q_value_df['signature_number_of_mutations_on_strands'] = np.around(signature_genic_versus_intergenic_filtered_q_value_df['signature_number_of_mutations_on_strands'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_filtered_q_value_df['Real_Fold_Enrichment'] = np.around(signature_genic_versus_intergenic_filtered_q_value_df['Real_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_filtered_q_value_df['Sims_Fold_Enrichment'] = np.around(signature_genic_versus_intergenic_filtered_q_value_df['Sims_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_filtered_q_value_df['Fold_Enrichment'] = np.around(signature_genic_versus_intergenic_filtered_q_value_df['Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_filtered_q_value_df['FC_REAL'] = np.around(signature_genic_versus_intergenic_filtered_q_value_df['FC_REAL'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_filtered_q_value_df['FC_SIMS'] = np.around(signature_genic_versus_intergenic_filtered_q_value_df['FC_SIMS'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_filtered_q_value_df['FC'] = np.around(signature_genic_versus_intergenic_filtered_q_value_df['FC'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+
+    # drop columns
+    signature_genic_versus_intergenic_filtered_q_value_df.drop(columns=['Real_Fold_Enrichment', 'Sims_Fold_Enrichment', 'Fold_Enrichment'], inplace=True)
+
+    # rename column names
+    signature_genic_versus_intergenic_filtered_q_value_df.rename(columns={'10%': 'fold_change_1.1',
+                                                         '20%': 'fold_change_1.2',
+                                                         '30%': 'fold_change_1.3',
+                                                         '50%': 'fold_change_1.5',
+                                                         '75%': 'fold_change_1.75',
+                                                         '100%': 'fold_change_2+'}, inplace=True)
+
+
+    # type_transcribed_versus_untranscribed_filtered_q_value_df
+    type_transcribed_versus_untranscribed_filtered_q_value_df['Transcribed_real_count'] = np.around(type_transcribed_versus_untranscribed_filtered_q_value_df['Transcribed_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_filtered_q_value_df['UnTranscribed_real_count'] = np.around(type_transcribed_versus_untranscribed_filtered_q_value_df['UnTranscribed_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_filtered_q_value_df['NonTranscribed_real_count'] = np.around(type_transcribed_versus_untranscribed_filtered_q_value_df['NonTranscribed_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_filtered_q_value_df['Transcribed_mean_sims_count'] = np.around(type_transcribed_versus_untranscribed_filtered_q_value_df['Transcribed_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_filtered_q_value_df['UnTranscribed_mean_sims_count'] = np.around(type_transcribed_versus_untranscribed_filtered_q_value_df['UnTranscribed_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_filtered_q_value_df['NonTranscribed_mean_sims_count'] = np.around(type_transcribed_versus_untranscribed_filtered_q_value_df['NonTranscribed_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_filtered_q_value_df['Real_Fold_Enrichment'] = np.around(type_transcribed_versus_untranscribed_filtered_q_value_df['Real_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_filtered_q_value_df['Sims_Fold_Enrichment'] = np.around(type_transcribed_versus_untranscribed_filtered_q_value_df['Sims_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_filtered_q_value_df['Fold_Enrichment'] = np.around(type_transcribed_versus_untranscribed_filtered_q_value_df['Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_filtered_q_value_df['FC_REAL'] = np.around(type_transcribed_versus_untranscribed_filtered_q_value_df['FC_REAL'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_filtered_q_value_df['FC_SIMS'] = np.around(type_transcribed_versus_untranscribed_filtered_q_value_df['FC_SIMS'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_filtered_q_value_df['FC'] = np.around(type_transcribed_versus_untranscribed_filtered_q_value_df['FC'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+
+    # drop columns
+    type_transcribed_versus_untranscribed_filtered_q_value_df.drop(columns=['Real_Fold_Enrichment', 'Sims_Fold_Enrichment', 'Fold_Enrichment'], inplace=True)
+
+    # rename column names
+    type_transcribed_versus_untranscribed_filtered_q_value_df.rename(columns={'10%': 'fold_change_1.1',
+                                                             '20%': 'fold_change_1.2',
+                                                             '30%': 'fold_change_1.3',
+                                                             '50%': 'fold_change_1.5',
+                                                             '75%': 'fold_change_1.75',
+                                                             '100%': 'fold_change_2+'}, inplace=True)
+
+
+    # type_lagging_versus_leading_filtered_q_value_df
+    # Round
+    type_lagging_versus_leading_filtered_q_value_df['Lagging_real_count'] = np.around(type_lagging_versus_leading_filtered_q_value_df['Lagging_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_lagging_versus_leading_filtered_q_value_df['Leading_real_count'] = np.around(type_lagging_versus_leading_filtered_q_value_df['Leading_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_lagging_versus_leading_filtered_q_value_df['Lagging_mean_sims_count'] = np.around(type_lagging_versus_leading_filtered_q_value_df['Lagging_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_lagging_versus_leading_filtered_q_value_df['Leading_mean_sims_count'] = np.around(type_lagging_versus_leading_filtered_q_value_df['Leading_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_lagging_versus_leading_filtered_q_value_df['Real_Fold_Enrichment'] = np.around(type_lagging_versus_leading_filtered_q_value_df['Real_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_lagging_versus_leading_filtered_q_value_df['Sims_Fold_Enrichment'] = np.around(type_lagging_versus_leading_filtered_q_value_df['Sims_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_lagging_versus_leading_filtered_q_value_df['Fold_Enrichment'] = np.around(type_lagging_versus_leading_filtered_q_value_df['Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_lagging_versus_leading_filtered_q_value_df['FC_REAL'] = np.around(type_lagging_versus_leading_filtered_q_value_df['FC_REAL'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_lagging_versus_leading_filtered_q_value_df['FC_SIMS'] = np.around(type_lagging_versus_leading_filtered_q_value_df['FC_SIMS'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_lagging_versus_leading_filtered_q_value_df['FC'] = np.around(type_lagging_versus_leading_filtered_q_value_df['FC'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+
+    # drop columns
+    type_lagging_versus_leading_filtered_q_value_df.drop(columns=['Real_Fold_Enrichment', 'Sims_Fold_Enrichment', 'Fold_Enrichment'], inplace=True)
+
+    # rename column names
+    type_lagging_versus_leading_filtered_q_value_df.rename(columns={'10%': 'fold_change_1.1',
+                                                   '20%': 'fold_change_1.2',
+                                                   '30%': 'fold_change_1.3',
+                                                   '50%': 'fold_change_1.5',
+                                                   '75%': 'fold_change_1.75',
+                                                   '100%': 'fold_change_2+'}, inplace=True)
+
+
+    # type_genic_versus_intergenic_filtered_q_value_df
+    # Round
+    type_genic_versus_intergenic_filtered_q_value_df['genic_real_count'] = np.around(type_genic_versus_intergenic_filtered_q_value_df['genic_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_genic_versus_intergenic_filtered_q_value_df['intergenic_real_count'] = np.around(type_genic_versus_intergenic_filtered_q_value_df['intergenic_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_genic_versus_intergenic_filtered_q_value_df['genic_mean_sims_count'] = np.around(type_genic_versus_intergenic_filtered_q_value_df['genic_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_genic_versus_intergenic_filtered_q_value_df['intergenic_mean_sims_count'] = np.around(type_genic_versus_intergenic_filtered_q_value_df['intergenic_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_genic_versus_intergenic_filtered_q_value_df['Real_Fold_Enrichment'] = np.around(type_genic_versus_intergenic_filtered_q_value_df['Real_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_genic_versus_intergenic_filtered_q_value_df['Sims_Fold_Enrichment'] = np.around(type_genic_versus_intergenic_filtered_q_value_df['Sims_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_genic_versus_intergenic_filtered_q_value_df['Fold_Enrichment'] = np.around(type_genic_versus_intergenic_filtered_q_value_df['Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_genic_versus_intergenic_filtered_q_value_df['FC_REAL'] = np.around(type_genic_versus_intergenic_filtered_q_value_df['FC_REAL'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_genic_versus_intergenic_filtered_q_value_df['FC_SIMS'] = np.around(type_genic_versus_intergenic_filtered_q_value_df['FC_SIMS'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_genic_versus_intergenic_filtered_q_value_df['FC'] = np.around(type_genic_versus_intergenic_filtered_q_value_df['FC'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+
+    # drop columns
+    type_genic_versus_intergenic_filtered_q_value_df.drop(columns=['Real_Fold_Enrichment', 'Sims_Fold_Enrichment', 'Fold_Enrichment'], inplace=True)
+
+    # rename column names
+    type_genic_versus_intergenic_filtered_q_value_df.rename(columns={'10%': 'fold_change_1.1',
+                                                    '20%': 'fold_change_1.2',
+                                                    '30%': 'fold_change_1.3',
+                                                    '50%': 'fold_change_1.5',
+                                                    '75%': 'fold_change_1.75',
+                                                    '100%': 'fold_change_2+'}, inplace=True)
+
+    return signature_transcribed_versus_untranscribed_filtered_q_value_df,\
+           signature_lagging_versus_leading_filtered_q_value_df,\
+           signature_genic_versus_intergenic_filtered_q_value_df,\
+           type_transcribed_versus_untranscribed_filtered_q_value_df,\
+           type_lagging_versus_leading_filtered_q_value_df,\
+           type_genic_versus_intergenic_filtered_q_value_df
+
+
+
+def process_dataframes(signature_transcribed_versus_untranscribed_df,
+                    signature_lagging_versus_leading_df,
+                    signature_genic_versus_intergenic_df,
+                    signature_mutation_type_strand_cancer_types_percentages_df,
+                    type_transcribed_versus_untranscribed_df,
+                    type_lagging_versus_leading_df,
+                    type_genic_versus_intergenic_df,
+                    type_strand_cancer_types_percentages_df):
+
+    # Signature Mutation Type Transcription Strand Asymmetry
+    # round
+    signature_transcribed_versus_untranscribed_df['Transcribed_real_count'] = np.around(signature_transcribed_versus_untranscribed_df['Transcribed_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_df['UnTranscribed_real_count'] = np.around(signature_transcribed_versus_untranscribed_df['UnTranscribed_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_df['NonTranscribed_real_count'] = np.around(signature_transcribed_versus_untranscribed_df['NonTranscribed_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_df['Transcribed_mean_sims_count'] = np.around(signature_transcribed_versus_untranscribed_df['Transcribed_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_df['UnTranscribed_mean_sims_count'] = np.around(signature_transcribed_versus_untranscribed_df['UnTranscribed_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_df['NonTranscribed_mean_sims_count'] = np.around(signature_transcribed_versus_untranscribed_df['NonTranscribed_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_df['percentage_of_mutations_on_strands'] = np.around(signature_transcribed_versus_untranscribed_df['percentage_of_mutations_on_strands'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_df['signature_number_of_mutations_on_strands'] = np.around(signature_transcribed_versus_untranscribed_df['signature_number_of_mutations_on_strands'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_df['Real_Fold_Enrichment'] = np.around(signature_transcribed_versus_untranscribed_df['Real_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_df['Sims_Fold_Enrichment'] = np.around(signature_transcribed_versus_untranscribed_df['Sims_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_df['Fold_Enrichment'] = np.around(signature_transcribed_versus_untranscribed_df['Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_df['FC_REAL'] = np.around(signature_transcribed_versus_untranscribed_df['FC_REAL'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_df['FC_SIMS'] = np.around(signature_transcribed_versus_untranscribed_df['FC_SIMS'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_transcribed_versus_untranscribed_df['FC'] = np.around(signature_transcribed_versus_untranscribed_df['FC'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+
+    # drop columns
+    signature_transcribed_versus_untranscribed_df.drop(columns=['Real_Fold_Enrichment', 'Sims_Fold_Enrichment', 'Fold_Enrichment'], inplace=True)
+
+    # rename column names
+    signature_transcribed_versus_untranscribed_df.rename(columns={'10%': 'fold_change_1.1',
+                                                                  '20%': 'fold_change_1.2',
+                                                                  '30%': 'fold_change_1.3',
+                                                                  '50%': 'fold_change_1.5',
+                                                                  '75%': 'fold_change_1.75',
+                                                                  '100%': 'fold_change_2+'}, inplace=True)
+
+
+    # Signature Mutation Type Replication Strand Asymmetry
+    # Round
+    signature_lagging_versus_leading_df['Lagging_real_count'] = np.around(signature_lagging_versus_leading_df['Lagging_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_df['Leading_real_count'] = np.around(signature_lagging_versus_leading_df['Leading_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_df['Lagging_mean_sims_count'] = np.around(signature_lagging_versus_leading_df['Lagging_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_df['Leading_mean_sims_count'] = np.around(signature_lagging_versus_leading_df['Leading_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_df['percentage_of_mutations_on_strands'] = np.around(signature_lagging_versus_leading_df['percentage_of_mutations_on_strands'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_df['signature_number_of_mutations_on_strands'] = np.around(signature_lagging_versus_leading_df['signature_number_of_mutations_on_strands'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_df['Real_Fold_Enrichment'] = np.around(signature_lagging_versus_leading_df['Real_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_df['Sims_Fold_Enrichment'] = np.around(signature_lagging_versus_leading_df['Sims_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_df['Fold_Enrichment'] = np.around(signature_lagging_versus_leading_df['Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_df['FC_REAL'] = np.around(signature_lagging_versus_leading_df['FC_REAL'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_df['FC_SIMS'] = np.around(signature_lagging_versus_leading_df['FC_SIMS'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_lagging_versus_leading_df['FC'] = np.around(signature_lagging_versus_leading_df['FC'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+
+    # drop columns
+    signature_lagging_versus_leading_df.drop(columns=['Real_Fold_Enrichment', 'Sims_Fold_Enrichment', 'Fold_Enrichment'], inplace=True)
+
+    # rename column names
+    signature_lagging_versus_leading_df.rename(columns={'10%': 'fold_change_1.1',
+                                                        '20%': 'fold_change_1.2',
+                                                        '30%': 'fold_change_1.3',
+                                                        '50%': 'fold_change_1.5',
+                                                        '75%': 'fold_change_1.75',
+                                                        '100%': 'fold_change_2+'}, inplace=True)
+
+
+    # Signature Mutation Type Genic vs Intergenic
+    # Round
+    signature_genic_versus_intergenic_df['genic_real_count'] = np.around(signature_genic_versus_intergenic_df['genic_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_df['intergenic_real_count'] = np.around(signature_genic_versus_intergenic_df['intergenic_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_df['genic_mean_sims_count'] = np.around(signature_genic_versus_intergenic_df['genic_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_df['intergenic_mean_sims_count'] = np.around(signature_genic_versus_intergenic_df['intergenic_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_df['percentage_of_mutations_on_strands'] = np.around(signature_genic_versus_intergenic_df['percentage_of_mutations_on_strands'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_df['signature_number_of_mutations_on_strands'] = np.around(signature_genic_versus_intergenic_df['signature_number_of_mutations_on_strands'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_df['Real_Fold_Enrichment'] = np.around(signature_genic_versus_intergenic_df['Real_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_df['Sims_Fold_Enrichment'] = np.around(signature_genic_versus_intergenic_df['Sims_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_df['Fold_Enrichment'] = np.around(signature_genic_versus_intergenic_df['Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_df['FC_REAL'] = np.around(signature_genic_versus_intergenic_df['FC_REAL'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_df['FC_SIMS'] = np.around(signature_genic_versus_intergenic_df['FC_SIMS'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    signature_genic_versus_intergenic_df['FC'] = np.around(signature_genic_versus_intergenic_df['FC'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+
+    # drop columns
+    signature_genic_versus_intergenic_df.drop(columns=['Real_Fold_Enrichment', 'Sims_Fold_Enrichment', 'Fold_Enrichment'], inplace=True)
+
+    # rename column names
+    signature_genic_versus_intergenic_df.rename(columns={'10%': 'fold_change_1.1',
+                                                         '20%': 'fold_change_1.2',
+                                                         '30%': 'fold_change_1.3',
+                                                         '50%': 'fold_change_1.5',
+                                                         '75%': 'fold_change_1.75',
+                                                         '100%': 'fold_change_2+'}, inplace=True)
+
+
+
+    # signature_mutation_type_strand_cancer_types_percentages_df
+    signature_mutation_type_strand_cancer_types_percentages_df.rename(
+        columns={'10%': 'fold_change_1.1', 'len(10%_cancer_types)': 'len(fold_change_1.1_cancer_types)',
+                 '20%': 'fold_change_1.2', 'len(20%_cancer_types)': 'len(fold_change_1.2_cancer_types)',
+                 '30%': 'fold_change_1.3', 'len(30%_cancer_types)': 'len(fold_change_1.3_cancer_types)',
+                 '50%': 'fold_change_1.5', 'len(50%_cancer_types)': 'len(fold_change_1.5_cancer_types)',
+                 '75%': 'fold_change_1.75', 'len(75%_cancer_types)': 'len(fold_change_1.75_cancer_types)',
+                 '100%': 'fold_change_2+', 'len(100%_cancer_types)': 'len(fold_change_2+_cancer_types)'}, inplace=True)
+
+
+    # Type Transcription Strand Asymmetry
+    # round
+    type_transcribed_versus_untranscribed_df['Transcribed_real_count'] = np.around(type_transcribed_versus_untranscribed_df['Transcribed_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_df['UnTranscribed_real_count'] = np.around(type_transcribed_versus_untranscribed_df['UnTranscribed_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_df['NonTranscribed_real_count'] = np.around(type_transcribed_versus_untranscribed_df['NonTranscribed_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_df['Transcribed_mean_sims_count'] = np.around(type_transcribed_versus_untranscribed_df['Transcribed_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_df['UnTranscribed_mean_sims_count'] = np.around(type_transcribed_versus_untranscribed_df['UnTranscribed_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_df['NonTranscribed_mean_sims_count'] = np.around(type_transcribed_versus_untranscribed_df['NonTranscribed_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_df['Real_Fold_Enrichment'] = np.around(type_transcribed_versus_untranscribed_df['Real_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_df['Sims_Fold_Enrichment'] = np.around(type_transcribed_versus_untranscribed_df['Sims_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_df['Fold_Enrichment'] = np.around(type_transcribed_versus_untranscribed_df['Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_df['FC_REAL'] = np.around(type_transcribed_versus_untranscribed_df['FC_REAL'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_df['FC_SIMS'] = np.around(type_transcribed_versus_untranscribed_df['FC_SIMS'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_transcribed_versus_untranscribed_df['FC'] = np.around(type_transcribed_versus_untranscribed_df['FC'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+
+    # drop columns
+    type_transcribed_versus_untranscribed_df.drop(columns=['Real_Fold_Enrichment', 'Sims_Fold_Enrichment', 'Fold_Enrichment'], inplace=True)
+
+    # rename column names
+    type_transcribed_versus_untranscribed_df.rename(columns={'10%': 'fold_change_1.1',
+                                                             '20%': 'fold_change_1.2',
+                                                             '30%': 'fold_change_1.3',
+                                                             '50%': 'fold_change_1.5',
+                                                             '75%': 'fold_change_1.75',
+                                                             '100%': 'fold_change_2+'}, inplace=True)
+
+
+
+    # Type Replication Strand Asymmetry
+    # Round
+    type_lagging_versus_leading_df['Lagging_real_count'] = np.around(type_lagging_versus_leading_df['Lagging_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_lagging_versus_leading_df['Leading_real_count'] = np.around(type_lagging_versus_leading_df['Leading_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_lagging_versus_leading_df['Lagging_mean_sims_count'] = np.around(type_lagging_versus_leading_df['Lagging_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_lagging_versus_leading_df['Leading_mean_sims_count'] = np.around(type_lagging_versus_leading_df['Leading_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_lagging_versus_leading_df['Real_Fold_Enrichment'] = np.around(type_lagging_versus_leading_df['Real_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_lagging_versus_leading_df['Sims_Fold_Enrichment'] = np.around(type_lagging_versus_leading_df['Sims_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_lagging_versus_leading_df['Fold_Enrichment'] = np.around(type_lagging_versus_leading_df['Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_lagging_versus_leading_df['FC_REAL'] = np.around(type_lagging_versus_leading_df['FC_REAL'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_lagging_versus_leading_df['FC_SIMS'] = np.around(type_lagging_versus_leading_df['FC_SIMS'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_lagging_versus_leading_df['FC'] = np.around(type_lagging_versus_leading_df['FC'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+
+    # drop columns
+    type_lagging_versus_leading_df.drop(columns=['Real_Fold_Enrichment', 'Sims_Fold_Enrichment', 'Fold_Enrichment'], inplace=True)
+
+    # rename column names
+    type_lagging_versus_leading_df.rename(columns={'10%': 'fold_change_1.1',
+                                                   '20%': 'fold_change_1.2',
+                                                   '30%': 'fold_change_1.3',
+                                                   '50%': 'fold_change_1.5',
+                                                   '75%': 'fold_change_1.75',
+                                                   '100%': 'fold_change_2+'}, inplace=True)
+
+
+
+    # Type Genic vs Intergenic
+    # Round
+    type_genic_versus_intergenic_df['genic_real_count'] = np.around(type_genic_versus_intergenic_df['genic_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_genic_versus_intergenic_df['intergenic_real_count'] = np.around(type_genic_versus_intergenic_df['intergenic_real_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_genic_versus_intergenic_df['genic_mean_sims_count'] = np.around(type_genic_versus_intergenic_df['genic_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_genic_versus_intergenic_df['intergenic_mean_sims_count'] = np.around(type_genic_versus_intergenic_df['intergenic_mean_sims_count'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_genic_versus_intergenic_df['Real_Fold_Enrichment'] = np.around(type_genic_versus_intergenic_df['Real_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_genic_versus_intergenic_df['Sims_Fold_Enrichment'] = np.around(type_genic_versus_intergenic_df['Sims_Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_genic_versus_intergenic_df['Fold_Enrichment'] = np.around(type_genic_versus_intergenic_df['Fold_Enrichment'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_genic_versus_intergenic_df['FC_REAL'] = np.around(type_genic_versus_intergenic_df['FC_REAL'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_genic_versus_intergenic_df['FC_SIMS'] = np.around(type_genic_versus_intergenic_df['FC_SIMS'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    type_genic_versus_intergenic_df['FC'] = np.around(type_genic_versus_intergenic_df['FC'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+
+    # drop columns
+    type_genic_versus_intergenic_df.drop(columns=['Real_Fold_Enrichment', 'Sims_Fold_Enrichment', 'Fold_Enrichment'], inplace=True)
+
+    # rename column names
+    type_genic_versus_intergenic_df.rename(columns={'10%': 'fold_change_1.1',
+                                                    '20%': 'fold_change_1.2',
+                                                    '30%': 'fold_change_1.3',
+                                                    '50%': 'fold_change_1.5',
+                                                    '75%': 'fold_change_1.75',
+                                                    '100%': 'fold_change_2+'}, inplace=True)
+
+
+    # type_strand_cancer_types_percentages_df
+    type_strand_cancer_types_percentages_df.rename(
+        columns={'my_type' : 'type',
+                 '10%': 'fold_change_1.1', 'len(10%_cancer_types)': 'len(fold_change_1.1_cancer_types)',
+                 '20%': 'fold_change_1.2', 'len(20%_cancer_types)': 'len(fold_change_1.2_cancer_types)',
+                 '30%': 'fold_change_1.3', 'len(30%_cancer_types)': 'len(fold_change_1.3_cancer_types)',
+                 '50%': 'fold_change_1.5', 'len(50%_cancer_types)': 'len(fold_change_1.5_cancer_types)',
+                 '75%': 'fold_change_1.75', 'len(75%_cancer_types)': 'len(fold_change_1.75_cancer_types)',
+                 '100%': 'fold_change_2+', 'len(100%_cancer_types)': 'len(fold_change_2+_cancer_types)'}, inplace=True)
+
+    return signature_transcribed_versus_untranscribed_df,\
+           signature_lagging_versus_leading_df,\
+           signature_genic_versus_intergenic_df,\
+           signature_mutation_type_strand_cancer_types_percentages_df,\
+           type_transcribed_versus_untranscribed_df,\
+           type_lagging_versus_leading_df,\
+           type_genic_versus_intergenic_df,\
+           type_strand_cancer_types_percentages_df
+
+def plot_cosmic_strand_bias_figure_in_parallel(input_dir,
+                                signature,
+                                signature_type,
+                                signature2cancer_type_list_dict,
+                                strand_bias,
+                                strand_bias_output_dir,
+                                signature_strand1_versus_strand2_for_bar_plot_df,
+                                signature_transcribed_versus_untranscribed_df,
+                                signature_genic_versus_intergenic_df,
+                                signature_lagging_versus_leading_df,
+                                type_transcribed_versus_untranscribed_df, # new
+                                type_genic_versus_intergenic_df, # new
+                                type_lagging_versus_leading_df, # new
+                                signature_mutation_type_strand_cancer_types_percentages_df,
+                                type_strand_cancer_types_percentages_df, # new
+                                signature2mutation_type2strand2percent2cancertypeslist_dict,
+                                type2strand2percent2cancertypeslist_dict,
+                                cancer_type2source_cancer_type_tuples_dict,
+                                percentage_strings,
+                                significance_level,
+                                cosmic_release_version,
+                                figure_file_extension,
+                                discreet_mode,
+                                figure_case_study):
 
     if signature_type == SBS:
         sbs_signature = signature
         # if any_bias_to_show_for_six_mutation_types(sbs_signature,strand_bias,signature2mutation_type2strand2percent2cancertypeslist_dict):
         if (sbs_signature in signature2cancer_type_list_dict) and (len(signature2cancer_type_list_dict[sbs_signature]) > 0):
+
             # COSMIC SBS Signature Across All Tissues and Tissue Based Together
             # For Figure Case Study SBS28 plots bar plots
-            plot_six_mutations_sbs_signatures_bar_plot_circles_across_all_tissues_and_tissue_based_together(sbs_signature,
+            # Cosmic data files are written
+            plot_six_mutations_sbs_signatures_bar_plot_circles_across_all_tissues_and_tissue_based_together(input_dir,
+                                                                        sbs_signature,
                                                                         strand_bias,
                                                                         strand_bias_output_dir,
                                                                         signature_strand1_versus_strand2_for_bar_plot_df,
@@ -4467,58 +4544,22 @@ def plot_cosmic_strand_bias_figure_in_parallel(signature,
                                                                         significance_level,
                                                                         cosmic_release_version,
                                                                         figure_file_extension,
+                                                                        discreet_mode,
                                                                         figure_case_study)
-
-            # # Not used anynore
-            # Cosmic SBS Signature Tissue Based
-            # cancer_type_list = signature2cancer_type_list_dict[sbs_signature]
-            # for tissue_based_cancer_type in cancer_type_list:
-            #     plot_six_mutations_sbs_signatures_bar_plot_circles_together(sbs_signature,
-            #                                                                 strand_bias,
-            #                                                                 strand_bias_output_dir,
-            #                                                                 signature_strand1_versus_strand2_for_bar_plot_df,
-            #                                                                 signature_transcribed_versus_untranscribed_df,
-            #                                                                 signature_genic_versus_intergenic_df,
-            #                                                                 signature_lagging_versus_leading_df,
-            #                                                                 signature_mutation_type_strand_cancer_types_percentages_df,
-            #                                                                 signature2mutation_type2strand2percent2cancertypeslist_dict,
-            #                                                                 signature2cancer_type_list_dict,
-            #                                                                 cancer_type2source_cancer_type_tuples_dict,
-            #                                                                 percentage_strings,
-            #                                                                 significance_level,
-            #                                                                 number_of_required_mutations_for_stacked_bar_plot,
-            #                                                                 cosmic_release_version,
-            #                                                                 figure_file_extension,
-            #                                                                 figure_case_study,
-            #                                                                 tissue_based = tissue_based_cancer_type)
-
-            # # Not used anynore
-            # # Cosmic SBS Signature Across All Cancer Types
-            # plot_six_mutations_sbs_signatures_bar_plot_circles_together(sbs_signature,
-            #                                                             strand_bias,
-            #                                                             strand_bias_output_dir,
-            #                                                             signature_strand1_versus_strand2_for_bar_plot_df,
-            #                                                             signature_transcribed_versus_untranscribed_df,
-            #                                                             signature_genic_versus_intergenic_df,
-            #                                                             signature_lagging_versus_leading_df,
-            #                                                             signature_mutation_type_strand_cancer_types_percentages_df,
-            #                                                             signature2mutation_type2strand2percent2cancertypeslist_dict,
-            #                                                             signature2cancer_type_list_dict,
-            #                                                             cancer_type2source_cancer_type_tuples_dict,
-            #                                                             percentage_strings,
-            #                                                             significance_level,
-            #                                                             number_of_required_mutations_for_stacked_bar_plot,
-            #                                                             cosmic_release_version,
-            #                                                             figure_file_extension,
-            #                                                             figure_case_study)
 
 
     elif signature_type == DBS:
         dbs_signature = signature
 
         if dbs_signature in signature2cancer_type_list_dict:
-            # Cosmic DBS Signature Across All Tissues and Tissue Based Together
-            plot_dbs_and_id_signatures_circle_figures_across_all_tissues_and_tissue_based_together(DBS,
+            if there_is_a_result_to_show(dbs_signature,
+                                        strand_bias,
+                                        type2strand2percent2cancertypeslist_dict,
+                                        signature2cancer_type_list_dict,
+                                        percentage_strings):
+
+                # Cosmic DBS Signature Across All Tissues and Tissue Based Together
+                plot_dbs_and_id_signatures_circle_figures_across_all_tissues_and_tissue_based_together(DBS,
                                                [dbs_signature],
                                                strand_bias,
                                                strand_bias_output_dir,
@@ -4529,47 +4570,29 @@ def plot_cosmic_strand_bias_figure_in_parallel(signature,
                                                figure_file_extension,
                                                signature_name = dbs_signature)
 
-            # # Not used any more
-            # # Cosmic DBS Signature Tissue Based
-            # cancer_type_list = signature2cancer_type_list_dict[dbs_signature]
-            # for tissue_based_cancer_type in cancer_type_list:
-            #     plot_dbs_and_id_signatures_figures(DBS,
-            #                                        [dbs_signature],
-            #                                        strand_bias,
-            #                                        strand_bias_output_dir,
-            #                                        significance_level,
-            #                                        type2strand2percent2cancertypeslist_dict,
-            #                                        signature2cancer_type_list_dict,
-            #                                        percentage_strings,
-            #                                        figure_type,
-            #                                        cosmic_release_version,
-            #                                        figure_file_extension,
-            #                                        signature_name = dbs_signature,
-            #                                        tissue_based = tissue_based_cancer_type)
-            #
-            # # Not used any more
-            # # Cosmic DBS Signature Across All Tissues
-            # # if any_bias_to_show(dbs_signature, strand_bias,type2strand2percent2cancertypeslist_dict):
-            # plot_dbs_and_id_signatures_figures(DBS,
-            #                                    [dbs_signature],
-            #                                    strand_bias,
-            #                                    strand_bias_output_dir,
-            #                                    significance_level,
-            #                                    type2strand2percent2cancertypeslist_dict,
-            #                                    signature2cancer_type_list_dict,
-            #                                    percentage_strings,
-            #                                    figure_type,
-            #                                    cosmic_release_version,
-            #                                    figure_file_extension,
-            #                                    signature_name = dbs_signature)
+                # write Cosmic data file
+                write_cosmic_data_file(dbs_signature,
+                                        strand_bias,
+                                        strand_bias_output_dir,
+                                        type_transcribed_versus_untranscribed_df,
+                                        type_genic_versus_intergenic_df,
+                                        type_lagging_versus_leading_df,
+                                        type_strand_cancer_types_percentages_df,
+                                        cosmic_release_version)
 
 
     elif signature_type == ID:
         id_signature = signature
 
         if id_signature in signature2cancer_type_list_dict:
-            # Cosmic ID Signature Across All Tissues and Tissue Based Together
-            plot_dbs_and_id_signatures_circle_figures_across_all_tissues_and_tissue_based_together(ID,
+            if there_is_a_result_to_show(id_signature,
+                                        strand_bias,
+                                        type2strand2percent2cancertypeslist_dict,
+                                        signature2cancer_type_list_dict,
+                                        percentage_strings):
+
+                # Cosmic ID Signature Across All Tissues and Tissue Based Together
+                plot_dbs_and_id_signatures_circle_figures_across_all_tissues_and_tissue_based_together(ID,
                                                [id_signature],
                                                strand_bias,
                                                strand_bias_output_dir,
@@ -4580,43 +4603,22 @@ def plot_cosmic_strand_bias_figure_in_parallel(signature,
                                                figure_file_extension,
                                                signature_name = id_signature)
 
-            # not used any more
-            # # Cosmic ID Signature Tissue Based
-            # cancer_type_list = signature2cancer_type_list_dict[id_signature]
-            # for tissue_based_cancer_type in cancer_type_list:
-            #     plot_dbs_and_id_signatures_figures(ID,
-            #                                        [id_signature],
-            #                                        strand_bias,
-            #                                        strand_bias_output_dir,
-            #                                        significance_level,
-            #                                        type2strand2percent2cancertypeslist_dict,
-            #                                        signature2cancer_type_list_dict,
-            #                                        percentage_strings,
-            #                                        figure_type,
-            #                                        cosmic_release_version,
-            #                                        figure_file_extension,
-            #                                        signature_name = id_signature,
-            #                                        tissue_based = tissue_based_cancer_type)
-
-            # not used any more
-            # # Cosmic ID Signature Across All Tissues
-            # # if any_bias_to_show(id_signature, strand_bias, type2strand2percent2cancertypeslist_dict):
-            # plot_dbs_and_id_signatures_figures(ID,
-            #                                    [id_signature],
-            #                                    strand_bias,
-            #                                    strand_bias_output_dir,
-            #                                    significance_level,
-            #                                    type2strand2percent2cancertypeslist_dict,
-            #                                    signature2cancer_type_list_dict,
-            #                                    percentage_strings,
-            #                                    figure_type,
-            #                                    cosmic_release_version,
-            #                                    figure_file_extension,
-            #                                    signature_name = id_signature)
+                # write Cosmic data file
+                write_cosmic_data_file(id_signature,
+                                        strand_bias,
+                                        strand_bias_output_dir,
+                                        type_transcribed_versus_untranscribed_df,
+                                        type_genic_versus_intergenic_df,
+                                        type_lagging_versus_leading_df,
+                                        type_strand_cancer_types_percentages_df,
+                                        cosmic_release_version)
 
 
-# Cosmic Figure Across All Cancer Types: Across all tissues + tissue based results
-def plot_six_mutations_sbs_signatures_bar_plot_circles_across_all_tissues_and_tissue_based_together(signature,
+
+# Cosmic Figure across all cancer types + cancer-type specific results
+# Cosmic data files are written
+def plot_six_mutations_sbs_signatures_bar_plot_circles_across_all_tissues_and_tissue_based_together(input_dir,
+                                              signature,
                                               strand_bias,
                                               strand_bias_output_dir,
                                               signature_strand1_versus_strand2_for_bar_plot_df,
@@ -4631,22 +4633,12 @@ def plot_six_mutations_sbs_signatures_bar_plot_circles_across_all_tissues_and_ti
                                               significance_level,
                                               cosmic_release_version,
                                               figure_file_extension,
+                                              discreet_mode,
                                               figure_case_study,
                                               tissue_based = None):
 
     percentage = True
     plot_type = '384'
-
-    signature_circle_plot_df = pd.DataFrame()
-    if strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED:
-        data_file_name = '%s_%s_%s.txt' % (cosmic_release_version, signature, COSMIC_TRANSCRIPTION_STRAND_BIAS)
-    elif strand_bias == LAGGING_VERSUS_LEADING:
-        data_file_name = '%s_%s_%s.txt' % (cosmic_release_version, signature, COSMIC_REPLICATION_STRAND_BIAS)
-    elif strand_bias == GENIC_VERSUS_INTERGENIC:
-        data_file_name = '%s_%s_%s.txt' % (cosmic_release_version, signature, COSMIC_GENIC_VS_INTERGENIC_BIAS)
-    data_file_path = os.path.join(strand_bias_output_dir, DATA_FILES, data_file_name)
-
-    groupby_df = signature_mutation_type_strand_cancer_types_percentages_df.groupby(['signature'])
 
     if strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED:
         strand1 = transcription_strands[0]
@@ -4657,10 +4649,6 @@ def plot_six_mutations_sbs_signatures_bar_plot_circles_across_all_tissues_and_ti
     elif strand_bias == LAGGING_VERSUS_LEADING:
         strand1 = replication_strands[0]
         strand2 = replication_strands[1]
-
-    if signature in groupby_df.groups:
-        signature_circle_plot_df = groupby_df.get_group(signature)
-        signature_circle_plot_df = signature_circle_plot_df[(signature_circle_plot_df['strand'] == strand1) | ((signature_circle_plot_df['strand'] == strand2))]
 
     mutation_types = six_mutation_types
 
@@ -4695,11 +4683,11 @@ def plot_six_mutations_sbs_signatures_bar_plot_circles_across_all_tissues_and_ti
     signature_tissue_type_tuples.reverse()
     signatures_ylabels_on_the_heatmap.reverse()
 
-    # constant
+    # width constant
     width = 60
     num_of_columns = 7
 
-    # varying
+    # height varying
     height = 24 + 1.65 * len(signatures_ylabels_on_the_heatmap)
     num_of_rows = 17 + len(signatures_ylabels_on_the_heatmap)
 
@@ -4719,13 +4707,16 @@ def plot_six_mutations_sbs_signatures_bar_plot_circles_across_all_tissues_and_ti
     circle_plot_legend_axis = plt.subplot(gs[-1, -1])
 
     # Plot first row
-    signature_real_data_df = prepare_df_and_plot_real_data_in_given_axis(real_data_plot_axis,
+    # discreet_mode affect the first row
+    signature_real_data_df = prepare_df_and_plot_real_data_in_given_axis(input_dir,
+                                 real_data_plot_axis,
                                  signature,
                                  signature2cancer_type_list_dict,
                                  cancer_type2source_cancer_type_tuples_dict,
                                  percentage,
                                  plot_type,
                                  strand_bias,
+                                 discreet_mode,
                                  tissue_based = tissue_based)
 
     # Plot second row
@@ -4747,7 +4738,7 @@ def plot_six_mutations_sbs_signatures_bar_plot_circles_across_all_tissues_and_ti
         plot_legend_in_given_axis(circle_plot_legend_axis, strand_bias)
     else:
         plot_proportion_of_cancer_types_text_in_given_axis_new(proportion_of_cancer_types_text_axis, strand_bias)
-        plot_proportion_of_cancer_types_in_given_axis(proportion_of_cancer_types_axis, strand_bias)
+        plot_proportion_of_cancer_types_in_given_axis(proportion_of_cancer_types_axis, strand_bias, shift_to_the_right = True)
         plot_legend_in_given_axis(circle_plot_legend_axis, strand_bias)
 
     # For Figure Case Study SBS28
@@ -4766,11 +4757,50 @@ def plot_six_mutations_sbs_signatures_bar_plot_circles_across_all_tissues_and_ti
                                     tissue_based = None,
                                     figure_case_study = figure_case_study)
 
-
     # Write COSMIC data files
-    signature_real_data_df.to_csv(data_file_path, sep='\t', index=False, mode='w')
+    if strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED:
+        data_file_name = '%s_%s_%s.txt' % (cosmic_release_version, signature, COSMIC_TRANSCRIPTION_STRAND_BIAS)
+        df = signature_transcribed_versus_untranscribed_df
+    elif strand_bias == LAGGING_VERSUS_LEADING:
+        data_file_name = '%s_%s_%s.txt' % (cosmic_release_version, signature, COSMIC_REPLICATION_STRAND_BIAS)
+        df = signature_lagging_versus_leading_df
+    elif strand_bias == GENIC_VERSUS_INTERGENIC:
+        data_file_name = '%s_%s_%s.txt' % (cosmic_release_version, signature, COSMIC_GENIC_VS_INTERGENIC_BIAS)
+        df = signature_genic_versus_intergenic_df
+    data_file_path = os.path.join(strand_bias_output_dir, DATA_FILES, data_file_name)
+
+    # Part1
+    signature_real_data_df['Across_All_Cancer_Types'] = np.around(signature_real_data_df['Across_All_Cancer_Types'], NUMBER_OF_DECIMAL_PLACES_TO_ROUND)
+    with open(data_file_path, 'w') as f:
+        # header line
+        f.write("# Only cancer types with minimum 2000 mutations for SBS signatures and minimum 1000 mutations for DBS and ID signatures with average probability at least 0.75 are considered.\n")
+        if strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED:
+            f.write("# For real mutations on transcribed:T, untranscribed:U, bitranscribed:B and nontranscribed:N strands averaged across cancer types.\n")
+        elif strand_bias == LAGGING_VERSUS_LEADING:
+            f.write("# For real mutations on lagging:A and leading:E strands averaged across cancer types.\n")
+        elif strand_bias == GENIC_VERSUS_INTERGENIC:
+            f.write("# For real mutations on genic (transcribed:T, untranscribed:U and bitranscribed:B) and intergenic (nontranscribed:N) regions averaged across cancer types.\n")
+        signature_real_data_df.to_csv(f, sep='\t', index=False, mode='w')
+
+    # Part2 Cancer Type Specific
+    sub_df = df[df['signature'] == signature]
     with open(data_file_path, 'a') as f:
         f.write("\n")
+        f.write("# There must be at least 1000 mutations on the strands.\n")
+        f.write("# Signature and mutation type must have at least 5% of all signature mutations on the strands.\n")
+        f.write("# Odds ratio between fold change of real mutations and fold change of simulated mutations must be at least 1.1.\n")
+        sub_df.to_csv(f, sep='\t', index=False)
+
+    # Part3 Across All Cancer Types
+    signature_circle_plot_df = pd.DataFrame()
+    groupby_df = signature_mutation_type_strand_cancer_types_percentages_df.groupby(['signature'])
+    if signature in groupby_df.groups:
+        signature_circle_plot_df = groupby_df.get_group(signature)
+        signature_circle_plot_df = signature_circle_plot_df[(signature_circle_plot_df['strand'] == strand1) | ((signature_circle_plot_df['strand'] == strand2))]
+        # rename column names
+    with open(data_file_path, 'a') as f:
+        f.write("\n")
+        f.write("Summary across all cancer types\n")
         signature_circle_plot_df.to_csv(f, sep='\t', index=False)
 
     if strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED:
@@ -4794,197 +4824,6 @@ def plot_six_mutations_sbs_signatures_bar_plot_circles_across_all_tissues_and_ti
     plt.cla()
     plt.close(fig)
 
-# Plots Cosmic Figure Tissue Based
-# Formerly this function was being used for Cosmic Figure Across All Cancer Types
-# now plot_six_mutations_sbs_signatures_bar_plot_circles_across_all_tissues_and_tissue_based_together
-def plot_six_mutations_sbs_signatures_bar_plot_circles_together(signature,
-                                              strand_bias,
-                                              strand_bias_output_dir,
-                                              signature_strand1_versus_strand2_for_bar_plot_df,
-                                              signature_transcribed_versus_untranscribed_df,
-                                              signature_genic_versus_intergenic_df,
-                                              signature_lagging_versus_leading_df,
-                                              signature_mutation_type_strand_cancer_types_percentages_df,
-                                              signature2mutation_type2strand2percent2cancertypeslist_dict,
-                                              signature2cancer_type_list_dict,
-                                              cancer_type2source_cancer_type_tuples_dict,
-                                              percentage_strings,
-                                              significance_level,
-                                              number_of_required_mutations_for_stacked_bar_plot,
-                                              cosmic_release_version,
-                                              figure_file_extension,
-                                              figure_case_study,
-                                              tissue_based = None):
-    percentage = True
-    plot_type = '384'
-
-    groupby_df = signature_strand1_versus_strand2_for_bar_plot_df.groupby(['signature'])
-    if signature in groupby_df.groups:
-        signature_bar_plot_df = groupby_df.get_group(signature)
-
-    groupby_df = signature_mutation_type_strand_cancer_types_percentages_df.groupby(['signature'])
-    if strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED:
-        strand1 = transcription_strands[0]
-        strand2 = transcription_strands[1]
-    elif strand_bias == GENIC_VERSUS_INTERGENIC:
-        strand1 = genic_versus_intergenic_strands[0]
-        strand2 = genic_versus_intergenic_strands[1]
-    elif strand_bias == LAGGING_VERSUS_LEADING:
-        strand1 = replication_strands[0]
-        strand2 = replication_strands[1]
-    if signature in groupby_df.groups:
-        signature_circle_plot_df = groupby_df.get_group(signature)
-        signature_circle_plot_df = signature_circle_plot_df[(signature_circle_plot_df['strand']==strand1) | ((signature_circle_plot_df['strand']==strand2))]
-
-    mutation_types = six_mutation_types
-    sbs_signature_with_number_of_cancer_types = augment_with_number_of_cancer_types(SBS, [signature], signature2cancer_type_list_dict, new_line=True)
-
-    # xticklabels_list = percentage_strings * 6
-    # xticklabels_list = ['1.1', '1.2', '1.3', '1.5', '1.75', '2+'] * 6
-
-    xticklabels_list = []
-    for percentage_string in percentage_strings:
-        if percentage_string == '5%':
-            xticklabels_list.append('1.05')
-        elif percentage_string == '10%':
-            xticklabels_list.append('1.1')
-        elif percentage_string == '20%':
-            xticklabels_list.append('1.2')
-        elif percentage_string == '25%':
-            xticklabels_list.append('1.25')
-        elif percentage_string == '30%':
-            xticklabels_list.append('1.3')
-        elif percentage_string == '50%':
-            xticklabels_list.append('1.5')
-        elif percentage_string == '75%':
-            xticklabels_list.append('1.75')
-        elif percentage_string == '100%':
-            xticklabels_list.append('2+')
-
-    xticklabels_list = xticklabels_list * 6
-
-    fig = plt.figure(figsize=(60, 38))
-
-    plt.rc('axes', edgecolor='lightgray')
-    plt.rcParams['axes.linewidth'] = 2
-
-    width = 7
-    height = 4
-    width_ratios = [1] * width
-    gs = gridspec.GridSpec(height, width, height_ratios = [2.25, 1, 0.75, 2], width_ratios = width_ratios) # legacy
-    fig.subplots_adjust(hspace=0.5, wspace=0)
-
-    # First row
-    real_data_plot_axis = plt.subplot(gs[0, :])
-
-    # Second row
-    cirle_plot_axis = plt.subplot(gs[1, :])
-
-    # Third row
-    proportion_of_cancer_types_text_axis = plt.subplot(gs[2, 0:1])
-    proportion_of_cancer_types_axis = plt.subplot(gs[2, 1:3])
-    circle_plot_legend_axis = plt.subplot(gs[2,-1])
-
-    # Fourth row
-    bar_plot_axis = plt.subplot(gs[3, 0:3])
-    # bars_legend_axis = plt.subplot(gs[3, 3]) # newly added
-    stacked_bar_plot_axis = plt.subplot(gs[3, 4:])
-
-    # Plot first row
-    signature_real_data_df = prepare_df_and_plot_real_data_in_given_axis(real_data_plot_axis,
-                                 signature,
-                                 signature2cancer_type_list_dict,
-                                 cancer_type2source_cancer_type_tuples_dict,
-                                 percentage,
-                                 plot_type,
-                                 strand_bias,
-                                 tissue_based = tissue_based)
-
-    # Plot second row
-    # Data comes from signature2mutation_type2strand2percent2cancertypeslist_dict
-    plot_circles_in_given_axis(cirle_plot_axis,
-                             strand_bias,
-                             percentage_strings,
-                             [signature],
-                             mutation_types,
-                             xticklabels_list,
-                             sbs_signature_with_number_of_cancer_types,
-                             signature2mutation_type2strand2percent2cancertypeslist_dict,
-                             signature2cancer_type_list_dict,
-                             tissue_based = tissue_based)
-
-    # Plot third row
-    if tissue_based:
-        proportion_of_cancer_types_text_axis.set_axis_off()
-        proportion_of_cancer_types_axis.set_axis_off()
-        plot_legend_in_given_axis(circle_plot_legend_axis, strand_bias)
-    else:
-        plot_proportion_of_cancer_types_text_in_given_axis(proportion_of_cancer_types_text_axis)
-        plot_proportion_of_cancer_types_in_given_axis(proportion_of_cancer_types_axis)
-        plot_legend_in_given_axis(circle_plot_legend_axis, strand_bias)
-
-    # Plot fourth row left
-    # Data comes from signature_strand1_versus_strand2_for_bar_plot_df
-    mutation_type_display = plot_bar_plot_in_given_axis(bar_plot_axis,
-                                signature,
-                                strand_bias,
-                                strand_bias_output_dir,
-                                signature_strand1_versus_strand2_for_bar_plot_df,
-                                signature_transcribed_versus_untranscribed_df,
-                                signature_genic_versus_intergenic_df,
-                                signature_lagging_versus_leading_df,
-                                significance_level,
-                                tissue_based = tissue_based)
-
-    # For Figure Case Study SBS28
-    # Bar Plot in a separate figure
-    # Cosmic Tissue Based
-    if figure_case_study:
-        plot_bar_plot_in_given_axis(None,
-                                    signature,
-                                    strand_bias,
-                                    strand_bias_output_dir,
-                                    signature_strand1_versus_strand2_for_bar_plot_df,
-                                    signature_transcribed_versus_untranscribed_df,
-                                    signature_genic_versus_intergenic_df,
-                                    signature_lagging_versus_leading_df,
-                                    significance_level,
-                                    tissue_based=tissue_based)
-    # Plot fourth row right
-    # Data comes from signature_strand1_versus_strand2_for_bar_plot_df
-    plot_stacked_bar_plot_in_given_axis(stacked_bar_plot_axis,
-                                signature,
-                                strand_bias,
-                                strand_bias_output_dir,
-                                signature_strand1_versus_strand2_for_bar_plot_df,
-                                signature_transcribed_versus_untranscribed_df,
-                                signature_genic_versus_intergenic_df,
-                                signature_lagging_versus_leading_df,
-                                mutation_type_display,
-                                significance_level,
-                                number_of_required_mutations_for_stacked_bar_plot,
-                                tissue_based = tissue_based)
-
-    if strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED:
-        feature_name = 'TRANSCR_ASYM'
-    elif strand_bias == GENIC_VERSUS_INTERGENIC:
-        feature_name = 'GENIC_ASYM'
-    elif strand_bias == LAGGING_VERSUS_LEADING:
-        feature_name = 'REPLIC_ASYM'
-
-    if tissue_based:
-        # v3.2_SBS1_REPLIC_ASYM_TA_C34447.jpg
-        NCI_Thesaurus_code = cancer_type_2_NCI_Thesaurus_code_dict[tissue_based]
-        filename = '%s_%s_%s_TA_%s.%s' % (cosmic_release_version , signature, feature_name, NCI_Thesaurus_code, figure_file_extension)
-        figFile = os.path.join(strand_bias_output_dir, COSMIC_TISSUE_BASED_FIGURES , filename)
-        fig.savefig(figFile, dpi=100, bbox_inches="tight")
-    else:
-        filename = '%s_%s_%s.%s' % (cosmic_release_version , signature, feature_name, figure_file_extension)
-        figFile = os.path.join(strand_bias_output_dir, FIGURES_COSMIC , filename)
-        fig.savefig(figFile, dpi=100, bbox_inches="tight")
-
-    plt.cla()
-    plt.close(fig)
 
 def plot_colorbar(output_path,
                   strand_bias,
@@ -5017,7 +4856,8 @@ def plot_colorbar(output_path,
     elif strand_bias == LAGGING_VERSUS_LEADING:
         cb.ax.set_title('Replicational Strand Asymmetry', fontsize=30, pad=40)  # legacy fontsize=25
 
-    cb.set_label("Fold change", horizontalalignment='center', rotation=0, fontsize=30)  # legacy fontsize=25
+    # cb.set_label("Fold change", horizontalalignment='center', rotation=0, fontsize=30)  # legacy fontsize=25
+    cb.set_label("Odds Ratio", horizontalalignment='center', rotation=0, fontsize=30)  # legacy fontsize=25
 
     if strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED:
         cb.ax.text(0.16, 1, strands[1], transform=cb.ax.transAxes, va='bottom', ha='center', fontsize=30)  # legacy fontsize=25
@@ -5035,43 +4875,6 @@ def plot_colorbar(output_path,
         figureFile = os.path.join(output_path, sub_dir, filename)
     else:
         figureFile = os.path.join(output_path, filename)
-
-    fig.savefig(figureFile)
-    plt.close()
-
-
-def plot_colorbar_alternative(output_path, strand_bias, strands, cmap, vmin, vmax, norm):
-    fig = plt.figure(figsize=(10, 3))
-    ax = fig.add_axes([0.05, 0.475, 0.9, 0.15])
-
-    # If a ListedColormap is used, the length of the bounds array must be
-    # one greater than the length of the color list.  The bounds must be
-    # monotonically increasing.
-
-    bounds = np.arange(vmin, vmax+1, 0.1)
-    # norm = mpl.colors.Normalize(vmin=v_min, vmax=v_max)
-
-    cb = mpl.colorbar.ColorbarBase(ax, cmap=cmap, norm=norm, ticks=bounds, spacing='proportional', orientation='horizontal')
-
-    cb.ax.tick_params(labelsize=10)
-    cb.set_ticks([0, 0.25, 0.5, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.5, 1.75, 2])
-    cb.set_ticklabels(["2", "1.75", "1.5", "1.3", "1.2", "1.1", "1", "1.1", "1.2", "1.3", "1.5", "1.75", "2"])
-
-    if strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED:
-        cb.ax.set_title('Transcriptional Strand Bias', fontsize=25, pad=20)
-    elif strand_bias == GENIC_VERSUS_INTERGENIC:
-        cb.ax.set_title('Genic versus Intergenic Regions', fontsize=25, pad=20)
-    elif strand_bias == LAGGING_VERSUS_LEADING:
-        cb.ax.set_title('Replicational Strand Bias', fontsize=25, pad=20)
-
-    cb.set_label("Fold change", horizontalalignment='center', rotation=0, fontsize=15)
-
-    cb.ax.text(0.08, 1, strands[1], transform=cb.ax.transAxes, va='bottom', ha='center', fontsize=15)
-    cb.ax.text(0.93, 1, strands[0], transform=cb.ax.transAxes, va='bottom', ha='center', fontsize=15)
-    # plt.show()
-
-    filename = 'strand_bias_%s_color_bar.png' %(strand_bias)
-    figureFile = os.path.join(output_path, FIGURES_MANUSCRIPT, filename)
 
     fig.savefig(figureFile)
     plt.close()
@@ -5179,7 +4982,8 @@ def calculate_radius_color_add_patch(strand_bias,
             row_sbs_signature_index,
             mutation_type,
             mutation_type_index,
-            top_axis):
+            top_axis,
+            percentages_df = None):
 
     if strand_bias == LAGGING_VERSUS_LEADING:
         strand1 = LAGGING
@@ -5218,6 +5022,11 @@ def calculate_radius_color_add_patch(strand_bias,
 
         if cancer_types_at_least_10_percent > 0:
             color_value = strand_values/cancer_types_at_least_10_percent
+            if percentages_df is not None:
+                percentages_df.loc[
+                    (percentages_df['signature'] == row_sbs_signature) &
+                    (percentages_df['mutation_type'] == mutation_type) &
+                    (percentages_df['strand'] == strand), 'avg_fold_change'] = color_value
             if strand == strand1:
                 color_strand1 = color_value
             elif strand == strand2:
@@ -5238,6 +5047,7 @@ def calculate_radius_color_add_patch(strand_bias,
         cancer_types_list = signature2mutation_type2strand2percent2cancertypeslist_dict[row_sbs_signature][mutation_type][strand2][percentage_string]
         all_cancer_types_list = signature2cancer_type_list_dict[row_sbs_signature]
         strand2_cancer_types_percentage = (len(cancer_types_list) / len(all_cancer_types_list)) * 100
+
     if (strand1_cancer_types_percentage is not None) and (strand2_cancer_types_percentage is None):
         radius = calculate_radius(strand1_cancer_types_percentage)
         if (radius > 0):
@@ -5252,26 +5062,28 @@ def calculate_radius_color_add_patch(strand_bias,
         radius_strand2 = calculate_radius(strand2_cancer_types_percentage)
         if (radius_strand1 > radius_strand2):
             # First strand1
-            top_axis.add_patch(plt.Circle((mutation_type_index + 0.5, row_sbs_signature_index + 0.5), radius_strand1, color = cmap(norm(color_strand1)), fill=True))
+            if radius_strand1 > 0:
+                top_axis.add_patch(plt.Circle((mutation_type_index + 0.5, row_sbs_signature_index + 0.5), radius_strand1, color = cmap(norm(color_strand1)), fill=True))
             # Second strand2
             if radius_strand2 > 0:
                 top_axis.add_patch(plt.Circle((mutation_type_index + 0.5, row_sbs_signature_index + 0.5), radius_strand2, color = cmap(norm(color_strand2)), fill=True))
-        else:
+        elif (radius_strand2 > radius_strand1):
             # First strand2
-            top_axis.add_patch(plt.Circle((mutation_type_index + 0.5, row_sbs_signature_index + 0.5), radius_strand2, color = cmap(norm(color_strand2)), fill=True))
+            if radius_strand2 > 0:
+                top_axis.add_patch(plt.Circle((mutation_type_index + 0.5, row_sbs_signature_index + 0.5), radius_strand2, color = cmap(norm(color_strand2)), fill=True))
             # Second strand1
             if radius_strand1 > 0:
                 top_axis.add_patch(plt.Circle((mutation_type_index + 0.5, row_sbs_signature_index + 0.5), radius_strand1, color = cmap(norm(color_strand1)), fill=True))
 
 
 # New code for the manuscript figures
-# colors SBS4
+# Instead of 6 circles for each mutation type
+# Now there is only 1 circle for each mutation type
+# e.g.: colors for SBS4
 # Lung: 1.1 H&N: 1.2 Liver: 1.5 Skin: 1.2 Stomach: 1.05
 # 4 cancer types >= 1.1
 # Circle size: 4/5
-# Color: (1.1 + 1.2 + 1.5 + 1.2)/4
-# Instead of 6 circles for each mutation type
-# Now there is only 1 circle for each mutation type
+# Circle color: (1.1 + 1.2 + 1.5 + 1.2)/4
 def plot_new_six_mutations_sbs_signatures_circle_figures(sbs_signatures,
                                                         strand_bias,
                                                         strands,
@@ -5284,7 +5096,8 @@ def plot_new_six_mutations_sbs_signatures_circle_figures(sbs_signatures,
                                                         percentage_strings,
                                                         signature_transcribed_versus_untranscribed_filtered_q_value_df,
                                                         signature_genic_versus_intergenic_filtered_q_value_df,
-                                                        signature_lagging_versus_leading_filtered_q_value_df):
+                                                        signature_lagging_versus_leading_filtered_q_value_df,
+                                                        signature_mutation_type_strand_cancer_types_percentages_df):
 
     mutation_types = six_mutation_types
 
@@ -5336,7 +5149,7 @@ def plot_new_six_mutations_sbs_signatures_circle_figures(sbs_signatures,
     # set facecolor white
     top_axis.set_facecolor('white')
 
-    #make aspect ratio square
+    # make aspect ratio square
     top_axis.set_aspect(1.0)
 
     # Colors are from SigProfilerPlotting tool to be consistent
@@ -5349,12 +5162,13 @@ def plot_new_six_mutations_sbs_signatures_circle_figures(sbs_signatures,
 
     # Put rectangles
     x = 0
+    x_mutation_type_text = 0.15 # For mutation types text
 
     # Write mutation types as text
     for i in range(0, len(mutation_types), 1):
-        # mutation_type
-        top_axis.text(x, # text x
-                      len(rows_sbs_signatures) + 1.5, # text y
+        # mutation_type text
+        top_axis.text(x_mutation_type_text, # x position for the mutation type text
+                      len(rows_sbs_signatures) + 1.5, # y position for the mutation type text
                       mutation_types[i],
                       fontsize=40,
                       fontweight='semibold',
@@ -5376,6 +5190,7 @@ def plot_new_six_mutations_sbs_signatures_circle_figures(sbs_signatures,
                                          alpha=0.25,
                                          edgecolor='grey'))
         x += 1
+        x_mutation_type_text += 1
 
     # CODE GOES HERE TO CENTER X-AXIS LABELS...
     # top_axis.set_xlim([0, len(mutation_types) * len(percentage_strings)])
@@ -5440,7 +5255,8 @@ def plot_new_six_mutations_sbs_signatures_circle_figures(sbs_signatures,
                                         row_sbs_signature_index,
                                         mutation_type,
                                         mutation_type_index,
-                                        top_axis)
+                                        top_axis,
+                                        percentages_df = signature_mutation_type_strand_cancer_types_percentages_df,)
 
             elif (strand_bias == GENIC_VERSUS_INTERGENIC):
                 if row_sbs_signature in signature2mutation_type2strand2percent2cancertypeslist_dict:
@@ -5456,7 +5272,8 @@ def plot_new_six_mutations_sbs_signatures_circle_figures(sbs_signatures,
                                         row_sbs_signature_index,
                                         mutation_type,
                                         mutation_type_index,
-                                        top_axis)
+                                        top_axis,
+                                        percentages_df = signature_mutation_type_strand_cancer_types_percentages_df)
 
             elif (strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED):
                 if row_sbs_signature in signature2mutation_type2strand2percent2cancertypeslist_dict:
@@ -5472,287 +5289,11 @@ def plot_new_six_mutations_sbs_signatures_circle_figures(sbs_signatures,
                                         row_sbs_signature_index,
                                         mutation_type,
                                         mutation_type_index,
-                                        top_axis)
+                                        top_axis,
+                                        percentages_df = signature_mutation_type_strand_cancer_types_percentages_df)
 
     # create the directory if it does not exists
     filename = 'SBS_Signatures_%s_with_circles_%s.png' % (strand_bias, str(significance_level).replace('.','_'))
-    figFile = os.path.join(strand_bias_output_dir, FIGURES_MANUSCRIPT, filename)
-    fig.savefig(figFile, dpi=100, bbox_inches="tight")
-
-    plt.cla()
-    plt.close(fig)
-
-
-# legacy code for the manuscript figures
-def plot_six_mutations_sbs_signatures_circle_figures(sbs_signatures,
-                                              strand_bias,
-                                              strand_bias_output_dir,
-                                              significance_level,
-                                              signature2mutation_type2strand2percent2cancertypeslist_dict,
-                                              signature2cancer_type_list_dict,
-                                              percentage_strings):
-
-    mutation_types = six_mutation_types
-
-    if strand_bias==LAGGING_VERSUS_LEADING:
-        strands=replication_strands
-    elif strand_bias==TRANSCRIBED_VERSUS_UNTRANSCRIBED:
-        strands=transcription_strands
-    elif strand_bias==GENIC_VERSUS_INTERGENIC:
-        strands=genic_versus_intergenic_strands
-
-    rows_sbs_signatures=[]
-
-    #Fill rows_sbs_signatures
-    for signature in sbs_signatures:
-        if signature in signature2mutation_type2strand2percent2cancertypeslist_dict:
-            for mutation_type in signature2mutation_type2strand2percent2cancertypeslist_dict[signature]:
-                for strand in strands:
-                    if strand in signature2mutation_type2strand2percent2cancertypeslist_dict[signature][mutation_type]:
-                        for percentage_string in signature2mutation_type2strand2percent2cancertypeslist_dict[signature][mutation_type][strand]:
-                            if len(signature2mutation_type2strand2percent2cancertypeslist_dict[signature][mutation_type][strand][percentage_string])>0:
-                                if signature not in rows_sbs_signatures:
-                                    rows_sbs_signatures.append(signature)
-
-    # Remove SBS mutational signatures attributed to artifacts
-    rows_sbs_signatures = list(set(rows_sbs_signatures) - set(signatures_attributed_to_artifacts))
-
-    print('%s Before sorting: %s' %(strand_bias,rows_sbs_signatures))
-    rows_sbs_signatures=sorted(rows_sbs_signatures,key=natural_key,reverse=True)
-    print('%s After sorting: %s' %(strand_bias,rows_sbs_signatures))
-
-    rows_sbs_signatures_with_number_of_cancer_types = augment_with_number_of_cancer_types(SBS, rows_sbs_signatures, signature2cancer_type_list_dict)
-
-    # xticklabels_list = percentage_strings * 6
-    # xticklabels_list = ['1.1', '1.2', '1.3', '1.5', '1.75', '2+'] * 6
-
-    xticklabels_list = []
-    for percentage_string in percentage_strings:
-        if percentage_string == '5%':
-            xticklabels_list.append('1.05')
-        elif percentage_string == '10%':
-            xticklabels_list.append('1.1')
-        elif percentage_string == '20%':
-            xticklabels_list.append('1.2')
-        elif percentage_string == '25%':
-            xticklabels_list.append('1.25')
-        elif percentage_string == '30%':
-            xticklabels_list.append('1.3')
-        elif percentage_string == '50%':
-            xticklabels_list.append('1.5')
-        elif percentage_string == '75%':
-            xticklabels_list.append('1.75')
-        elif percentage_string == '100%':
-            xticklabels_list.append('2+')
-
-    xticklabels_list = xticklabels_list * 6
-
-    # New plot (width,height)
-    fig, top_axis = plt.subplots(figsize=(5 + 1.5 * len(xticklabels_list), 10 + 1.5 * len(rows_sbs_signatures)))
-    plt.rc('axes', edgecolor='lightgray')
-    #make aspect ratio square
-    top_axis.set_aspect(1.0)
-
-    # set title
-    if strand_bias == LAGGING_VERSUS_LEADING:
-        title = 'Lagging Strand versus Leading Strand Bias'
-    elif strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED:
-        title = 'Transcribed Strand versus Untranscribed Strand Bias'
-    elif strand_bias == GENIC_VERSUS_INTERGENIC:
-        title = 'Genic Regions versus Intergenic Regions Bias'
-    top_axis.text(len(percentage_strings) * 3, len(rows_sbs_signatures) + 2.5, title, horizontalalignment='center', fontsize=60, fontweight='bold', fontname='Arial')
-
-    # Colors are from SigProfilerPlotting tool to be consistent
-    colors = [[3 / 256, 189 / 256, 239 / 256],
-              [1 / 256, 1 / 256, 1 / 256],
-              [228 / 256, 41 / 256, 38 / 256],
-              [203 / 256, 202 / 256, 202 / 256],
-              [162 / 256, 207 / 256, 99 / 256],
-              [236 / 256, 199 / 256, 197 / 256]]
-
-    # Put rectangles
-    x = 0
-
-    for i in range(0, len(mutation_types), 1):
-        top_axis.text((x + (len(percentage_strings) / 2) - 0.75), len(rows_sbs_signatures) + 1.5, mutation_types[i],fontsize=55, fontweight='bold', fontname='Arial')
-        top_axis.add_patch(plt.Rectangle((x + .0415, len(rows_sbs_signatures) + 0.75), len(percentage_strings) - (2 * .0415), .5,facecolor=colors[i], clip_on=False))
-        top_axis.add_patch(plt.Rectangle((x, 0), len(percentage_strings), len(rows_sbs_signatures), facecolor=colors[i], zorder=0,alpha=0.25, edgecolor='grey'))
-        x += len(percentage_strings)
-
-    # CODE GOES HERE TO CENTER X-AXIS LABELS...
-    top_axis.set_xlim([0, len(mutation_types) * len(percentage_strings)])
-    top_axis.set_xticklabels([])
-
-    top_axis.tick_params(axis='x', which='both', length=0, labelsize=35)
-
-    # major ticks
-    top_axis.set_xticks(np.arange(0, len(mutation_types) * len(percentage_strings), 1))
-    # minor ticks
-    top_axis.set_xticks(np.arange(0, len(mutation_types) * len(percentage_strings), 1) + 0.5, minor=True)
-
-    top_axis.set_xticklabels(xticklabels_list, minor=True, fontweight='bold', fontname='Arial', fontsize=40)
-
-    top_axis.xaxis.set_label_position('top')
-    top_axis.xaxis.set_ticks_position('top')
-
-    plt.tick_params(
-        axis='x',  # changes apply to the x-axis
-        which='both',  # both major and minor ticks are affected
-        bottom=False,  # ticks along the bottom edge are off
-        top=False)  # labels along the bottom edge are off
-
-    # CODE GOES HERE TO CENTER Y-AXIS LABELS...
-    top_axis.set_ylim([0, len(rows_sbs_signatures)])
-    top_axis.set_yticklabels([])
-
-    top_axis.tick_params(axis='y', which='both', length=0, labelsize=40)
-
-    # major ticks
-    top_axis.set_yticks(np.arange(0, len(rows_sbs_signatures), 1))
-    # minor ticks
-    top_axis.set_yticks(np.arange(0, len(rows_sbs_signatures), 1) + 0.5, minor=True)
-    # top_axis.set_yticklabels(rows_sbs_signatures_with_number_of_cancer_types, minor=True, fontweight='bold', fontname='Times New Roman')  # fontsize
-    top_axis.set_yticklabels(rows_sbs_signatures_with_number_of_cancer_types, minor=True)
-
-    plt.tick_params(
-        axis='y',  # changes apply to the x-axis
-        which='both',  # both major and minor ticks are affected
-        left=False)  # labels along the bottom edge are off
-
-    # Gridlines based on major ticks
-    top_axis.grid(which='major', color='black', zorder=3)
-
-    # Put the legend
-    if strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED:
-        legend_elements = [
-            Line2D([0], [0], marker='o', color='white', label='Genic: Transcribed Strand', markerfacecolor='royalblue',markersize=40),
-            Line2D([0], [0], marker='o', color='white', label='Genic: Untranscribed Strand', markerfacecolor='yellowgreen',markersize=40)]
-    elif strand_bias == GENIC_VERSUS_INTERGENIC:
-        legend_elements = [
-            Line2D([0], [0], marker='o', color='white', label='Genic Regions', markerfacecolor='cyan', markersize=40),
-            Line2D([0], [0], marker='o', color='white', label='Intergenic Regions', markerfacecolor='gray', markersize=40)]
-    elif (strand_bias == LAGGING_VERSUS_LEADING):
-        legend_elements = [
-            Line2D([0], [0], marker='o', color='white', label='Lagging Strand', markerfacecolor='indianred', markersize=40),
-            Line2D([0], [0], marker='o', color='white', label='Leading Strand', markerfacecolor='goldenrod', markersize=40)]
-
-    top_axis.legend(handles=legend_elements, ncol=len(legend_elements), bbox_to_anchor=(0, 0, 1, 0), loc='upper right', fontsize=40)
-
-    for percentage_diff_index, percentage_string in enumerate(percentage_strings):
-         for mutation_type_index, mutation_type in enumerate(mutation_types):
-            for row_sbs_signature_index, row_sbs_signature in enumerate(rows_sbs_signatures):
-                if (strand_bias == LAGGING_VERSUS_LEADING):
-                    if row_sbs_signature in signature2mutation_type2strand2percent2cancertypeslist_dict:
-                        if mutation_type in signature2mutation_type2strand2percent2cancertypeslist_dict[row_sbs_signature]:
-                            lagging_cancer_types_percentage = None
-                            leading_cancer_types_percentage = None
-
-                            if LAGGING in signature2mutation_type2strand2percent2cancertypeslist_dict[row_sbs_signature][mutation_type]:
-                                cancer_types_list = signature2mutation_type2strand2percent2cancertypeslist_dict[row_sbs_signature][mutation_type][LAGGING][percentage_string]
-                                all_cancer_types_list = signature2cancer_type_list_dict[row_sbs_signature]
-                                lagging_cancer_types_percentage = (len(cancer_types_list) / len(all_cancer_types_list)) * 100
-                            if LEADING in signature2mutation_type2strand2percent2cancertypeslist_dict[row_sbs_signature][mutation_type]:
-                                cancer_types_list = signature2mutation_type2strand2percent2cancertypeslist_dict[row_sbs_signature][mutation_type][LEADING][percentage_string]
-                                all_cancer_types_list = signature2cancer_type_list_dict[row_sbs_signature]
-                                leading_cancer_types_percentage = (len(cancer_types_list) / len(all_cancer_types_list)) * 100
-
-                            if (lagging_cancer_types_percentage is not None) and (leading_cancer_types_percentage is None):
-                                radius = calculate_radius(lagging_cancer_types_percentage)
-                                if (radius > 0):
-                                    top_axis.add_patch(plt.Circle((mutation_type_index * len(percentage_strings) + percentage_diff_index + 0.5,row_sbs_signature_index + 0.5), radius,color='indianred', fill=True))
-                            elif (leading_cancer_types_percentage is not None) and (lagging_cancer_types_percentage is None):
-                                radius = calculate_radius(leading_cancer_types_percentage)
-                                if (radius > 0):
-                                    top_axis.add_patch(plt.Circle((mutation_type_index * len(percentage_strings) + percentage_diff_index + 0.5,row_sbs_signature_index + 0.5), radius,color='goldenrod', fill=True))
-                            elif (lagging_cancer_types_percentage is not None) and (leading_cancer_types_percentage is not None):
-                                radius_lagging = calculate_radius(lagging_cancer_types_percentage)
-                                radius_leading = calculate_radius(leading_cancer_types_percentage)
-                                if (radius_lagging > radius_leading):
-                                    # First lagging
-                                    top_axis.add_patch(plt.Circle((mutation_type_index * len(percentage_strings) + percentage_diff_index + 0.5,row_sbs_signature_index + 0.5), radius_lagging,color='indianred', fill=True))
-                                    # Second leading
-                                    top_axis.add_patch(plt.Circle((mutation_type_index * len(percentage_strings) + percentage_diff_index + 0.5,row_sbs_signature_index + 0.5), radius_leading,color='goldenrod', fill=True))
-                                else:
-                                    # First leading
-                                    top_axis.add_patch(plt.Circle((mutation_type_index * len(percentage_strings) + percentage_diff_index + 0.5,row_sbs_signature_index + 0.5), radius_leading,color='goldenrod', fill=True))
-                                    # Second lagging
-                                    top_axis.add_patch(plt.Circle((mutation_type_index * len(percentage_strings) + percentage_diff_index + 0.5,row_sbs_signature_index + 0.5), radius_lagging,color='indianred', fill=True))
-
-                elif (strand_bias == GENIC_VERSUS_INTERGENIC):
-                    if row_sbs_signature in signature2mutation_type2strand2percent2cancertypeslist_dict:
-                        if mutation_type in signature2mutation_type2strand2percent2cancertypeslist_dict[row_sbs_signature]:
-                            genic_cancer_types_percentage = None
-                            intergenic_cancer_types_percentage = None
-
-                            if GENIC in signature2mutation_type2strand2percent2cancertypeslist_dict[row_sbs_signature][mutation_type]:
-                                cancer_types_list = signature2mutation_type2strand2percent2cancertypeslist_dict[row_sbs_signature][mutation_type][GENIC][percentage_string]
-                                all_cancer_types_list = signature2cancer_type_list_dict[row_sbs_signature]
-                                genic_cancer_types_percentage = (len(cancer_types_list) / len(all_cancer_types_list)) * 100
-                            if INTERGENIC in signature2mutation_type2strand2percent2cancertypeslist_dict[row_sbs_signature][mutation_type]:
-                                cancer_types_list = signature2mutation_type2strand2percent2cancertypeslist_dict[row_sbs_signature][mutation_type][INTERGENIC][percentage_string]
-                                all_cancer_types_list = signature2cancer_type_list_dict[row_sbs_signature]
-                                intergenic_cancer_types_percentage = (len(cancer_types_list) / len(all_cancer_types_list)) * 100
-
-                            if (genic_cancer_types_percentage is not None) and (intergenic_cancer_types_percentage is None):
-                                radius = calculate_radius(genic_cancer_types_percentage)
-                                if (radius > 0):
-                                    top_axis.add_patch(plt.Circle((mutation_type_index * len(percentage_strings) + percentage_diff_index + 0.5,row_sbs_signature_index + 0.5), radius, color='cyan',fill=True))
-                            elif (intergenic_cancer_types_percentage is not None) and (genic_cancer_types_percentage is None):
-                                radius = calculate_radius(intergenic_cancer_types_percentage)
-                                if (radius > 0):
-                                    top_axis.add_patch(plt.Circle((mutation_type_index * len(percentage_strings) + percentage_diff_index + 0.5,row_sbs_signature_index + 0.5), radius, color='gray',fill=True))
-                            elif (genic_cancer_types_percentage is not None) and (intergenic_cancer_types_percentage is not None):
-                                radius_genic = calculate_radius(genic_cancer_types_percentage)
-                                radius_intergenic = calculate_radius(intergenic_cancer_types_percentage)
-                                if (radius_genic > radius_intergenic):
-                                    # First genic
-                                    top_axis.add_patch(plt.Circle((mutation_type_index * len(percentage_strings) + percentage_diff_index + 0.5,row_sbs_signature_index + 0.5), radius_genic,color='cyan', fill=True))
-                                    # Second intergenic
-                                    top_axis.add_patch(plt.Circle((mutation_type_index * len(percentage_strings) + percentage_diff_index + 0.5,row_sbs_signature_index + 0.5), radius_intergenic,color='gray', fill=True))
-                                else:
-                                    # First intergenic
-                                    top_axis.add_patch(plt.Circle((mutation_type_index * len(percentage_strings) + percentage_diff_index + 0.5,row_sbs_signature_index + 0.5), radius_intergenic,color='gray', fill=True))
-                                    # Second genic
-                                    top_axis.add_patch(plt.Circle((mutation_type_index * len(percentage_strings) + percentage_diff_index + 0.5,row_sbs_signature_index + 0.5), radius_genic,color='cyan', fill=True))
-                elif (strand_bias == TRANSCRIBED_VERSUS_UNTRANSCRIBED):
-                    if row_sbs_signature in signature2mutation_type2strand2percent2cancertypeslist_dict:
-                        if mutation_type in signature2mutation_type2strand2percent2cancertypeslist_dict[row_sbs_signature]:
-                            transcribed_cancer_types_percentage = None
-                            untranscribed_cancer_types_percentage = None
-
-                            if TRANSCRIBED_STRAND in signature2mutation_type2strand2percent2cancertypeslist_dict[row_sbs_signature][mutation_type]:
-                                cancer_types_list = signature2mutation_type2strand2percent2cancertypeslist_dict[row_sbs_signature][mutation_type][TRANSCRIBED_STRAND][percentage_string]
-                                all_cancer_types_list = signature2cancer_type_list_dict[row_sbs_signature]
-                                transcribed_cancer_types_percentage = (len(cancer_types_list) / len(all_cancer_types_list)) * 100
-                            if UNTRANSCRIBED_STRAND in signature2mutation_type2strand2percent2cancertypeslist_dict[row_sbs_signature][mutation_type]:
-                                cancer_types_list = signature2mutation_type2strand2percent2cancertypeslist_dict[row_sbs_signature][mutation_type][UNTRANSCRIBED_STRAND][percentage_string]
-                                all_cancer_types_list = signature2cancer_type_list_dict[row_sbs_signature]
-                                untranscribed_cancer_types_percentage = (len(cancer_types_list) / len(all_cancer_types_list)) * 100
-
-                            if (transcribed_cancer_types_percentage is not None) and (untranscribed_cancer_types_percentage is None):
-                                radius = calculate_radius(transcribed_cancer_types_percentage)
-                                if (radius > 0):
-                                    top_axis.add_patch(plt.Circle((mutation_type_index * len(percentage_strings) + percentage_diff_index + 0.5,row_sbs_signature_index + 0.5), radius,color='royalblue', fill=True))
-                            elif (untranscribed_cancer_types_percentage is not None) and (transcribed_cancer_types_percentage is None):
-                                radius = calculate_radius(untranscribed_cancer_types_percentage)
-                                if (radius > 0):
-                                    top_axis.add_patch(plt.Circle((mutation_type_index * len(percentage_strings) + percentage_diff_index + 0.5,row_sbs_signature_index + 0.5), radius,color='yellowgreen', fill=True))
-                            elif (transcribed_cancer_types_percentage is not None) and (untranscribed_cancer_types_percentage is not None):
-                                radius_transcribed = calculate_radius(transcribed_cancer_types_percentage)
-                                radius_untranscribed = calculate_radius(untranscribed_cancer_types_percentage)
-                                if (radius_transcribed > radius_untranscribed):
-                                    # First transcribed
-                                    top_axis.add_patch(plt.Circle((mutation_type_index * len(percentage_strings) + percentage_diff_index + 0.5,row_sbs_signature_index + 0.5), radius_transcribed,color='royalblue', fill=True))
-                                    # Second untranscribed
-                                    top_axis.add_patch(plt.Circle((mutation_type_index * len(percentage_strings) + percentage_diff_index + 0.5,row_sbs_signature_index + 0.5), radius_untranscribed,color='yellowgreen', fill=True))
-                                else:
-                                    # First untranscribed
-                                    top_axis.add_patch(plt.Circle((mutation_type_index * len(percentage_strings) + percentage_diff_index + 0.5,row_sbs_signature_index + 0.5), radius_untranscribed,color='yellowgreen', fill=True))
-                                    # Second transcribed
-                                    top_axis.add_patch(plt.Circle((mutation_type_index * len(percentage_strings) + percentage_diff_index + 0.5,row_sbs_signature_index + 0.5), radius_transcribed,color='royalblue', fill=True))
-
-    # create the directory if it does not exists
-    filename = 'SBS_Signatures_%s_with_circles_%s.png' % (strand_bias,str(significance_level).replace('.','_'))
     figFile = os.path.join(strand_bias_output_dir, FIGURES_MANUSCRIPT, filename)
     fig.savefig(figFile, dpi=100, bbox_inches="tight")
 
