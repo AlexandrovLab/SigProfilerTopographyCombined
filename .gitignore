@@ -1,0 +1,36 @@
+# Ignore all files with these extensions
+*.pbs
+*.txt
+*.csv
+*.png
+*.wig
+*.bigWig
+*.bed
+*.zip
+*.xlsx
+*.bed.gz
+*.gz
+*.xml
+*.2bit
+*.o
+*.e
+
+# Don't track the content of the these folders
+__pycache__/
+
+Analysis_Both_Real_and_Sims_vs_Only_Real.py
+ENCODE_Files_Used.py
+Figure5_Enrichment_Depletion_Examples.py
+Figure_Case_Study_B_cell_malignancies_clustered_kataegis_omikli_nonClustered.py
+Figure_Case_Study_SBS28.py
+Figure_Case_Study_SBS4_Across_All_Tissues.py
+Figure_Case_Study_Shared_Etiology.py
+Figure_new_cosmic.py
+Legend.py
+SBS384_Strand_Bias_Figure_Burcak.py
+SBS384_Strand_Bias_Figure_Original.py
+SBS3_SBS17b_In_Common_Samples.py
+SBS60_Details.py
+SBS_384_plots_example_plots.pdf
+Strand_Bias_Heatmap_Figures.py
+
